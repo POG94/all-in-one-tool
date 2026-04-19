@@ -7,6 +7,7 @@
 
     <!-- Chart.js: library buat bikin grafik -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
     <style>
       * {
@@ -263,8 +264,35 @@
   <body>
     <div class="container">
       <header>
-        <h1>💰 Expense Tracker</h1>
-        <p>Catat semua pengeluaran bisnismu di satu tempat</p>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+          "
+        >
+          <div>
+            <h1>💰 Expense Tracker</h1>
+            <p>Catat semua pengeluaran bisnismu di satu tempat</p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <button type="button" id="export-btn" style="background: #16a34a">
+              📥 Export CSV
+            </button>
+            <button type="button" id="import-btn" style="background: #2563eb">
+              📤 Import CSV
+            </button>
+            <!-- file input tersembunyi, dipicu tombol Import -->
+            <input
+              type="file"
+              id="import-file"
+              accept=".csv"
+              style="display: none"
+            />
+          </div>
+        </div>
       </header>
 
       <!-- SUMMARY CARDS -->
@@ -774,7 +802,136 @@
           document.getElementById("filter-status").value = "";
           render();
         });
+      // ============================================
+      // EXPORT KE CSV
+      // ============================================
+      document
+        .getElementById("export-btn")
+        .addEventListener("click", function () {
+          const expenses = getExpenses();
 
+          if (expenses.length === 0) {
+            alert("Belum ada expense untuk di-export.");
+            return;
+          }
+
+          // Susun data buat CSV — kolom sesuai urutan yang rapi
+          const dataUntukCSV = expenses.map((e) => ({
+            Tanggal: e.tanggal,
+            Kategori: e.kategori,
+            Deskripsi: e.deskripsi,
+            Jumlah: e.jumlah,
+            Status: e.status,
+          }));
+
+          // PapaParse ubah array object jadi string CSV
+          const csv = Papa.unparse(dataUntukCSV);
+
+          // Bikin file yang bisa di-download
+          const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
+
+          // Nama file pakai tanggal hari ini, contoh: "expenses-2026-04-19.csv"
+          const today = new Date().toISOString().split("T")[0];
+          const filename = `expenses-${today}.csv`;
+
+          // Trigger download pakai link tersembunyi
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        });
+
+      // ============================================
+      // IMPORT DARI CSV
+      // ============================================
+      // Tombol Import mengaktifkan file picker
+      document
+        .getElementById("import-btn")
+        .addEventListener("click", function () {
+          document.getElementById("import-file").click();
+        });
+
+      // Saat user milih file
+      document
+        .getElementById("import-file")
+        .addEventListener("change", function (e) {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          Papa.parse(file, {
+            header: true, // baris pertama = nama kolom
+            skipEmptyLines: true,
+            complete: function (results) {
+              const rows = results.data;
+
+              if (rows.length === 0) {
+                alert("File CSV kosong atau formatnya tidak sesuai.");
+                return;
+              }
+
+              // Validasi kolom — harus ada kolom wajib ini
+              const kolomWajib = [
+                "Tanggal",
+                "Kategori",
+                "Deskripsi",
+                "Jumlah",
+                "Status",
+              ];
+              const kolomAda = Object.keys(rows[0]);
+              const kolomHilang = kolomWajib.filter(
+                (k) => !kolomAda.includes(k),
+              );
+
+              if (kolomHilang.length > 0) {
+                alert(
+                  "Format CSV salah. Kolom yang hilang: " +
+                    kolomHilang.join(", ") +
+                    "\n\nKolom wajib: Tanggal, Kategori, Deskripsi, Jumlah, Status",
+                );
+                return;
+              }
+
+              // Konfirmasi sebelum import
+              const jumlahBaru = rows.length;
+              const jumlahLama = getExpenses().length;
+              const konfirmasi = confirm(
+                `Akan ditambahkan ${jumlahBaru} baris baru ke ${jumlahLama} expense yang sudah ada.\n\n` +
+                  `Total setelah import: ${jumlahLama + jumlahBaru} expense.\n\n` +
+                  `Lanjutkan?`,
+              );
+
+              if (!konfirmasi) {
+                e.target.value = ""; // reset file input
+                return;
+              }
+
+              // Ubah baris CSV jadi format expense (kasih ID baru, sanitize data)
+              const expensesBaru = rows.map((row, i) => ({
+                id: (Date.now() + i).toString(), // ID unik, +i biar nggak tabrakan
+                tanggal: row.Tanggal,
+                kategori: row.Kategori,
+                deskripsi: row.Deskripsi,
+                jumlah: row.Jumlah,
+                status: row.Status,
+              }));
+
+              // Gabungin sama data yang udah ada
+              const expenses = getExpenses().concat(expensesBaru);
+              saveExpenses(expenses);
+
+              alert(`✅ Berhasil import ${jumlahBaru} expense!`);
+              e.target.value = ""; // reset file input biar bisa import file yang sama lagi
+              render();
+            },
+            error: function (err) {
+              alert("Gagal baca file CSV: " + err.message);
+            },
+          });
+        });
       // ============================================
       // INISIALISASI
       // ============================================
