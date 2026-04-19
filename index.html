@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Expense Tracker - Finance Tool</title>
 
-    <!-- Chart.js: library buat bikin grafik -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -45,7 +44,6 @@
         margin-top: 4px;
       }
 
-      /* Summary cards */
       .summary {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -95,8 +93,6 @@
         font-size: 18px;
         margin-bottom: 16px;
       }
-
-      /* Form */
       .form-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -185,10 +181,29 @@
         display: none;
       }
 
-      /* Tabel */
+      /* Tampilan live Harga Satuan */
+      .harga-satuan-box {
+        margin-top: 12px;
+        padding: 10px 14px;
+        background: #f0f9ff;
+        border-left: 3px solid #2563eb;
+        border-radius: 4px;
+        font-size: 14px;
+        color: #1e40af;
+      }
+      .harga-satuan-box strong {
+        color: #1e3a8a;
+      }
+
+      /* Scroll horizontal untuk tabel di layar kecil */
+      .table-wrapper {
+        overflow-x: auto;
+      }
+
       table {
         width: 100%;
         border-collapse: collapse;
+        min-width: 800px;
       }
       th,
       td {
@@ -202,9 +217,19 @@
         font-size: 12px;
         text-transform: uppercase;
         color: #64748b;
+        white-space: nowrap;
       }
       tr:hover td {
         background: #f8fafc;
+      }
+      td.jumlah-cell {
+        white-space: nowrap;
+      }
+      td.jumlah-cell .sub {
+        display: block;
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
       }
 
       .status-badge {
@@ -230,13 +255,11 @@
         color: #94a3b8;
       }
 
-      /* Chart */
       .chart-container {
         position: relative;
         height: 300px;
       }
 
-      /* Responsif di HP */
       @media (max-width: 600px) {
         body {
           padding: 12px;
@@ -247,12 +270,10 @@
         header h1 {
           font-size: 20px;
         }
-        table {
-          font-size: 12px;
-        }
         th,
         td {
           padding: 8px;
+          font-size: 12px;
         }
         .chart-container {
           height: 250px;
@@ -284,7 +305,6 @@
             <button type="button" id="import-btn" style="background: #2563eb">
               📤 Import CSV
             </button>
-            <!-- file input tersembunyi, dipicu tombol Import -->
             <input
               type="file"
               id="import-file"
@@ -315,14 +335,13 @@
         </div>
       </div>
 
-      <!-- FORM INPUT / EDIT -->
+      <!-- FORM -->
       <div class="form-section">
         <h2 id="form-title">➕ Tambah Expense Baru</h2>
         <div id="edit-notice">
           📝 Mode edit aktif — kamu sedang mengubah expense yang sudah ada.
         </div>
         <form id="expense-form">
-          <!-- hidden field buat simpan ID saat edit -->
           <input type="hidden" id="edit-id" value="" />
 
           <div class="form-grid">
@@ -352,7 +371,32 @@
               />
             </div>
             <div>
-              <label for="jumlah">Jumlah (Rp)</label>
+              <label for="qty">Qty</label>
+              <input
+                type="number"
+                id="qty"
+                placeholder="1"
+                min="0.01"
+                step="any"
+                required
+              />
+            </div>
+            <div>
+              <label for="satuan">Satuan</label>
+              <select id="satuan" required>
+                <option value="">-- Pilih Kategori Dulu --</option>
+              </select>
+            </div>
+            <div id="satuan-custom-wrapper" style="display: none">
+              <label for="satuan-custom">Satuan (isi sendiri)</label>
+              <input
+                type="text"
+                id="satuan-custom"
+                placeholder="contoh: karung"
+              />
+            </div>
+            <div>
+              <label for="jumlah">Jumlah Total (Rp)</label>
               <input
                 type="number"
                 id="jumlah"
@@ -369,6 +413,15 @@
               </select>
             </div>
           </div>
+
+          <!-- Live display Harga Satuan -->
+          <div class="harga-satuan-box" id="harga-satuan-box">
+            Harga Satuan: <strong id="harga-satuan-value">—</strong>
+            <span style="color: #64748b; font-size: 12px; margin-left: 8px"
+              >(Jumlah ÷ Qty, otomatis)</span
+            >
+          </div>
+
           <div class="form-actions">
             <button type="submit" id="submit-btn">Simpan Expense</button>
             <button
@@ -399,7 +452,6 @@
             <label for="filter-bulan">Bulan</label>
             <select id="filter-bulan">
               <option value="">Semua Bulan</option>
-              <!-- Diisi otomatis oleh JavaScript -->
             </select>
           </div>
           <div>
@@ -434,7 +486,7 @@
         </div>
       </div>
 
-      <!-- DAFTAR EXPENSE -->
+      <!-- LIST -->
       <div class="list-section">
         <h2>
           📋 Daftar Expense
@@ -443,19 +495,23 @@
             style="font-size: 13px; font-weight: normal; color: #64748b"
           ></span>
         </h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Tanggal</th>
-              <th>Kategori</th>
-              <th>Deskripsi</th>
-              <th>Jumlah</th>
-              <th>Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="expense-table-body"></tbody>
-        </table>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Kategori</th>
+                <th>Deskripsi</th>
+                <th>Qty</th>
+                <th>Satuan</th>
+                <th>Jumlah</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="expense-table-body"></tbody>
+          </table>
+        </div>
         <div id="empty-state" class="empty-state" style="display: none">
           Belum ada expense yang cocok. Coba reset filter atau tambah expense
           baru 👆
@@ -465,29 +521,45 @@
 
     <script>
       // ============================================
-      // KONFIGURASI & STATE
+      // KONFIGURASI
       // ============================================
       const STORAGE_KEY = "fim_expenses";
 
-      // Menyimpan instance Chart.js biar bisa di-destroy saat update
+      // Mapping satuan per kategori — aku sediakan yang paling umum per kategori.
+      // Kamu bisa tambah/edit list-nya di sini kapan aja.
+      const SATUAN_MAP = {
+        "Pembelian Stok": [
+          "pcs",
+          "kg",
+          "liter",
+          "meter",
+          "box",
+          "roll",
+          "pak",
+          "lusin",
+        ],
+        Operasional: ["bulan", "kWh", "m³", "GB", "paket", "unit"],
+        "Gaji/Upah": ["orang", "hari", "bulan", "jam"],
+        Transportasi: ["rit", "km", "liter", "trip"],
+        "Pajak & Admin": ["transaksi", "bulan", "tahun"],
+        "Lain-lain": ["pcs", "unit", "item"],
+      };
+
       let chartInstance = null;
 
       // ============================================
-      // HELPER FUNCTIONS
+      // HELPERS
       // ============================================
       function getExpenses() {
         const data = localStorage.getItem(STORAGE_KEY);
         return data ? JSON.parse(data) : [];
       }
-
       function saveExpenses(expenses) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
       }
-
       function formatRupiah(angka) {
         return "Rp " + Number(angka).toLocaleString("id-ID");
       }
-
       function formatTanggal(tanggal) {
         const d = new Date(tanggal);
         return d.toLocaleDateString("id-ID", {
@@ -496,16 +568,12 @@
           year: "numeric",
         });
       }
-
-      // Ambil "YYYY-MM" dari tanggal "YYYY-MM-DD"
       function getBulanDariTanggal(tanggal) {
         return tanggal.substring(0, 7);
       }
-
-      // Format "2026-04" jadi "April 2026"
       function formatBulan(bulan) {
         const [year, month] = bulan.split("-");
-        const namaBulan = [
+        const nama = [
           "Januari",
           "Februari",
           "Maret",
@@ -519,11 +587,87 @@
           "November",
           "Desember",
         ];
-        return namaBulan[parseInt(month) - 1] + " " + year;
+        return nama[parseInt(month) - 1] + " " + year;
       }
 
       // ============================================
-      // FILTER LOGIC
+      // SATUAN DROPDOWN — dinamis berdasarkan kategori
+      // ============================================
+      function updateSatuanOptions() {
+        const kategori = document.getElementById("kategori").value;
+        const select = document.getElementById("satuan");
+        const wrapper = document.getElementById("satuan-custom-wrapper");
+        const customInput = document.getElementById("satuan-custom");
+
+        // Reset
+        select.innerHTML = "";
+        wrapper.style.display = "none";
+        customInput.required = false;
+        customInput.value = "";
+
+        if (!kategori) {
+          select.innerHTML =
+            '<option value="">-- Pilih Kategori Dulu --</option>';
+          return;
+        }
+
+        select.innerHTML = '<option value="">-- Pilih Satuan --</option>';
+        (SATUAN_MAP[kategori] || []).forEach((sat) => {
+          const opt = document.createElement("option");
+          opt.value = sat;
+          opt.textContent = sat;
+          select.appendChild(opt);
+        });
+
+        // Opsi "Lainnya" selalu ada di akhir
+        const lainnya = document.createElement("option");
+        lainnya.value = "__lainnya__";
+        lainnya.textContent = "Lainnya (isi sendiri)";
+        select.appendChild(lainnya);
+      }
+
+      // Saat user pilih "Lainnya", tampilkan input text bebas
+      function handleSatuanChange() {
+        const val = document.getElementById("satuan").value;
+        const wrapper = document.getElementById("satuan-custom-wrapper");
+        const customInput = document.getElementById("satuan-custom");
+        if (val === "__lainnya__") {
+          wrapper.style.display = "";
+          customInput.required = true;
+          customInput.focus();
+        } else {
+          wrapper.style.display = "none";
+          customInput.required = false;
+          customInput.value = "";
+        }
+      }
+
+      // Ambil value satuan final (dropdown atau custom)
+      function getSatuanValue() {
+        const dropdown = document.getElementById("satuan").value;
+        if (dropdown === "__lainnya__") {
+          return document.getElementById("satuan-custom").value.trim();
+        }
+        return dropdown;
+      }
+
+      // ============================================
+      // HARGA SATUAN — live calculation
+      // ============================================
+      function updateHargaSatuan() {
+        const qty = parseFloat(document.getElementById("qty").value) || 0;
+        const jumlah = parseFloat(document.getElementById("jumlah").value) || 0;
+        const display = document.getElementById("harga-satuan-value");
+
+        if (qty > 0 && jumlah > 0) {
+          display.textContent = formatRupiah(jumlah / qty);
+        } else {
+          display.textContent = "—";
+        }
+      }
+
+      // ============================================
+      // FILTER
       // ============================================
       function getFilteredExpenses() {
         const bulan = document.getElementById("filter-bulan").value;
@@ -537,17 +681,13 @@
           return true;
         });
       }
-
-      // Update dropdown filter bulan sesuai data yang ada
       function updateBulanFilter() {
-        const expenses = getExpenses();
         const bulanSet = new Set(
-          expenses.map((e) => getBulanDariTanggal(e.tanggal)),
+          getExpenses().map((e) => getBulanDariTanggal(e.tanggal)),
         );
-        const bulanList = Array.from(bulanSet).sort().reverse(); // terbaru di atas
-
+        const bulanList = Array.from(bulanSet).sort().reverse();
         const select = document.getElementById("filter-bulan");
-        const currentValue = select.value;
+        const current = select.value;
         select.innerHTML = '<option value="">Semua Bulan</option>';
         bulanList.forEach((b) => {
           const opt = document.createElement("option");
@@ -555,29 +695,24 @@
           opt.textContent = formatBulan(b);
           select.appendChild(opt);
         });
-        select.value = currentValue; // restore pilihan sebelumnya
+        select.value = current;
       }
 
       // ============================================
       // CHART
       // ============================================
       function renderChart(expenses) {
-        // Group total per kategori
         const perKategori = {};
         expenses.forEach((e) => {
           perKategori[e.kategori] =
             (perKategori[e.kategori] || 0) + Number(e.jumlah);
         });
-
         const labels = Object.keys(perKategori);
         const data = Object.values(perKategori);
 
-        // Destroy chart lama biar nggak numpuk
         if (chartInstance) chartInstance.destroy();
-
         const ctx = document.getElementById("kategori-chart").getContext("2d");
 
-        // Kalau nggak ada data, tampilin pesan
         if (labels.length === 0) {
           ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
           ctx.font = "14px sans-serif";
@@ -594,10 +729,10 @@
         chartInstance = new Chart(ctx, {
           type: "doughnut",
           data: {
-            labels: labels,
+            labels,
             datasets: [
               {
-                data: data,
+                data,
                 backgroundColor: [
                   "#3b82f6",
                   "#ef4444",
@@ -617,7 +752,7 @@
               legend: { position: "right" },
               tooltip: {
                 callbacks: {
-                  label: (ctx) => ctx.label + ": " + formatRupiah(ctx.parsed),
+                  label: (c) => c.label + ": " + formatRupiah(c.parsed),
                 },
               },
             },
@@ -630,7 +765,6 @@
       // ============================================
       function render() {
         updateBulanFilter();
-
         const filtered = getFilteredExpenses();
         const tbody = document.getElementById("expense-table-body");
         const emptyState = document.getElementById("empty-state");
@@ -646,12 +780,25 @@
           );
 
           sorted.forEach((exp) => {
+            // Hitung harga satuan kalau qty valid
+            const qty = Number(exp.qty) || 0;
+            const jumlah = Number(exp.jumlah) || 0;
+            const hargaSatuan = qty > 0 ? jumlah / qty : 0;
+
+            // Cell Jumlah: total di atas, @harga_satuan di bawah (kecil)
+            const jumlahCell =
+              hargaSatuan > 0
+                ? `${formatRupiah(jumlah)}<span class="sub">@ ${formatRupiah(hargaSatuan)}</span>`
+                : formatRupiah(jumlah);
+
             const row = document.createElement("tr");
             row.innerHTML = `
           <td>${formatTanggal(exp.tanggal)}</td>
           <td>${exp.kategori}</td>
           <td>${exp.deskripsi}</td>
-          <td>${formatRupiah(exp.jumlah)}</td>
+          <td>${exp.qty || "—"}</td>
+          <td>${exp.satuan || "—"}</td>
+          <td class="jumlah-cell">${jumlahCell}</td>
           <td><span class="status-badge status-${exp.status.toLowerCase()}">${exp.status}</span></td>
           <td>
             <button class="btn-edit" onclick="editExpense('${exp.id}')">Edit</button>
@@ -662,15 +809,14 @@
           });
         }
 
-        // Summary cards pakai data yang sudah difilter (biar konsisten sama tabel)
-        const totalAll = filtered.reduce((sum, e) => sum + Number(e.jumlah), 0);
+        // Summary
+        const totalAll = filtered.reduce((s, e) => s + Number(e.jumlah), 0);
         const totalLunas = filtered
           .filter((e) => e.status === "Lunas")
           .reduce((s, e) => s + Number(e.jumlah), 0);
         const totalBelum = filtered
           .filter((e) => e.status === "Belum")
           .reduce((s, e) => s + Number(e.jumlah), 0);
-
         document.getElementById("total-all").textContent =
           formatRupiah(totalAll);
         document.getElementById("total-lunas").textContent =
@@ -679,7 +825,6 @@
           formatRupiah(totalBelum);
         document.getElementById("total-count").textContent = filtered.length;
 
-        // Info filter aktif di header tabel
         const bulan = document.getElementById("filter-bulan").value;
         const kategori = document.getElementById("filter-kategori").value;
         const status = document.getElementById("filter-status").value;
@@ -690,17 +835,23 @@
         document.getElementById("filter-info").textContent =
           info.length > 0 ? "— " + info.join(" • ") : "";
 
-        // Render chart
         renderChart(filtered);
       }
 
       // ============================================
-      // ADD / EDIT EXPENSE
+      // ADD / EDIT
       // ============================================
       document
         .getElementById("expense-form")
         .addEventListener("submit", function (e) {
           e.preventDefault();
+
+          // Validasi satuan (kalau "Lainnya" tapi kosong)
+          const satuanFinal = getSatuanValue();
+          if (!satuanFinal) {
+            alert("Satuan wajib diisi.");
+            return;
+          }
 
           const editId = document.getElementById("edit-id").value;
           const expenses = getExpenses();
@@ -709,29 +860,28 @@
             tanggal: document.getElementById("tanggal").value,
             kategori: document.getElementById("kategori").value,
             deskripsi: document.getElementById("deskripsi").value,
+            qty: document.getElementById("qty").value,
+            satuan: satuanFinal,
             jumlah: document.getElementById("jumlah").value,
             status: document.getElementById("status").value,
           };
 
           if (editId) {
-            // MODE EDIT: cari expense dengan id yang sama, update
             const idx = expenses.findIndex((e) => e.id === editId);
-            if (idx !== -1) {
-              expenses[idx] = { ...expenses[idx], ...data };
-            }
+            if (idx !== -1) expenses[idx] = { ...expenses[idx], ...data };
             exitEditMode();
           } else {
-            // MODE ADD: tambah baru
             expenses.push({ id: Date.now().toString(), ...data });
           }
 
           saveExpenses(expenses);
           this.reset();
           document.getElementById("tanggal").valueAsDate = new Date();
+          updateSatuanOptions();
+          updateHargaSatuan();
           render();
         });
 
-      // Masuk mode edit: isi form dengan data expense yang dipilih
       function editExpense(id) {
         const exp = getExpenses().find((e) => e.id === id);
         if (!exp) return;
@@ -740,21 +890,37 @@
         document.getElementById("tanggal").value = exp.tanggal;
         document.getElementById("kategori").value = exp.kategori;
         document.getElementById("deskripsi").value = exp.deskripsi;
+        document.getElementById("qty").value = exp.qty || "";
         document.getElementById("jumlah").value = exp.jumlah;
         document.getElementById("status").value = exp.status;
+
+        // Refresh satuan dropdown sesuai kategori, lalu set value
+        updateSatuanOptions();
+        const satuanList = SATUAN_MAP[exp.kategori] || [];
+        if (exp.satuan && satuanList.includes(exp.satuan)) {
+          document.getElementById("satuan").value = exp.satuan;
+          document.getElementById("satuan-custom-wrapper").style.display =
+            "none";
+        } else if (exp.satuan) {
+          // Satuan custom — aktifkan "Lainnya" dan isi text input
+          document.getElementById("satuan").value = "__lainnya__";
+          document.getElementById("satuan-custom").value = exp.satuan;
+          document.getElementById("satuan-custom-wrapper").style.display = "";
+          document.getElementById("satuan-custom").required = true;
+        }
+
+        updateHargaSatuan();
 
         document.getElementById("form-title").innerHTML = "✏️ Edit Expense";
         document.getElementById("edit-notice").style.display = "block";
         document.getElementById("submit-btn").textContent = "Update Expense";
         document.getElementById("cancel-btn").style.display = "inline-block";
 
-        // Scroll ke form biar user lihat
         document
           .querySelector(".form-section")
           .scrollIntoView({ behavior: "smooth" });
       }
 
-      // Keluar mode edit, reset form ke tampilan "tambah baru"
       function exitEditMode() {
         document.getElementById("edit-id").value = "";
         document.getElementById("form-title").innerHTML =
@@ -769,6 +935,8 @@
         .addEventListener("click", function () {
           document.getElementById("expense-form").reset();
           document.getElementById("tanggal").valueAsDate = new Date();
+          updateSatuanOptions();
+          updateHargaSatuan();
           exitEditMode();
         });
 
@@ -802,43 +970,53 @@
           document.getElementById("filter-status").value = "";
           render();
         });
+
       // ============================================
-      // EXPORT KE CSV
+      // SATUAN & HARGA SATUAN EVENTS
+      // ============================================
+      document
+        .getElementById("kategori")
+        .addEventListener("change", updateSatuanOptions);
+      document
+        .getElementById("satuan")
+        .addEventListener("change", handleSatuanChange);
+      document
+        .getElementById("qty")
+        .addEventListener("input", updateHargaSatuan);
+      document
+        .getElementById("jumlah")
+        .addEventListener("input", updateHargaSatuan);
+
+      // ============================================
+      // EXPORT CSV
       // ============================================
       document
         .getElementById("export-btn")
         .addEventListener("click", function () {
           const expenses = getExpenses();
-
           if (expenses.length === 0) {
             alert("Belum ada expense untuk di-export.");
             return;
           }
 
-          // Susun data buat CSV — kolom sesuai urutan yang rapi
           const dataUntukCSV = expenses.map((e) => ({
             Tanggal: e.tanggal,
             Kategori: e.kategori,
             Deskripsi: e.deskripsi,
+            Qty: e.qty || "",
+            Satuan: e.satuan || "",
             Jumlah: e.jumlah,
             Status: e.status,
           }));
 
-          // PapaParse ubah array object jadi string CSV
           const csv = Papa.unparse(dataUntukCSV);
-
-          // Bikin file yang bisa di-download
           const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
           const url = URL.createObjectURL(blob);
-
-          // Nama file pakai tanggal hari ini, contoh: "expenses-2026-04-19.csv"
           const today = new Date().toISOString().split("T")[0];
-          const filename = `expenses-${today}.csv`;
 
-          // Trigger download pakai link tersembunyi
           const link = document.createElement("a");
           link.href = url;
-          link.download = filename;
+          link.download = `expenses-${today}.csv`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -846,16 +1024,14 @@
         });
 
       // ============================================
-      // IMPORT DARI CSV
+      // IMPORT CSV
       // ============================================
-      // Tombol Import mengaktifkan file picker
       document
         .getElementById("import-btn")
         .addEventListener("click", function () {
           document.getElementById("import-file").click();
         });
 
-      // Saat user milih file
       document
         .getElementById("import-file")
         .addEventListener("change", function (e) {
@@ -863,21 +1039,21 @@
           if (!file) return;
 
           Papa.parse(file, {
-            header: true, // baris pertama = nama kolom
+            header: true,
             skipEmptyLines: true,
             complete: function (results) {
               const rows = results.data;
-
               if (rows.length === 0) {
                 alert("File CSV kosong atau formatnya tidak sesuai.");
                 return;
               }
 
-              // Validasi kolom — harus ada kolom wajib ini
               const kolomWajib = [
                 "Tanggal",
                 "Kategori",
                 "Deskripsi",
+                "Qty",
+                "Satuan",
                 "Jumlah",
                 "Status",
               ];
@@ -885,46 +1061,42 @@
               const kolomHilang = kolomWajib.filter(
                 (k) => !kolomAda.includes(k),
               );
-
               if (kolomHilang.length > 0) {
                 alert(
                   "Format CSV salah. Kolom yang hilang: " +
                     kolomHilang.join(", ") +
-                    "\n\nKolom wajib: Tanggal, Kategori, Deskripsi, Jumlah, Status",
+                    "\n\nKolom wajib: " +
+                    kolomWajib.join(", "),
                 );
                 return;
               }
 
-              // Konfirmasi sebelum import
               const jumlahBaru = rows.length;
               const jumlahLama = getExpenses().length;
-              const konfirmasi = confirm(
+              const ok = confirm(
                 `Akan ditambahkan ${jumlahBaru} baris baru ke ${jumlahLama} expense yang sudah ada.\n\n` +
-                  `Total setelah import: ${jumlahLama + jumlahBaru} expense.\n\n` +
-                  `Lanjutkan?`,
+                  `Total setelah import: ${jumlahLama + jumlahBaru} expense.\n\nLanjutkan?`,
               );
-
-              if (!konfirmasi) {
-                e.target.value = ""; // reset file input
+              if (!ok) {
+                e.target.value = "";
                 return;
               }
 
-              // Ubah baris CSV jadi format expense (kasih ID baru, sanitize data)
               const expensesBaru = rows.map((row, i) => ({
-                id: (Date.now() + i).toString(), // ID unik, +i biar nggak tabrakan
+                id: (Date.now() + i).toString(),
                 tanggal: row.Tanggal,
                 kategori: row.Kategori,
                 deskripsi: row.Deskripsi,
+                qty: row.Qty,
+                satuan: row.Satuan,
                 jumlah: row.Jumlah,
                 status: row.Status,
               }));
 
-              // Gabungin sama data yang udah ada
               const expenses = getExpenses().concat(expensesBaru);
               saveExpenses(expenses);
-
               alert(`✅ Berhasil import ${jumlahBaru} expense!`);
-              e.target.value = ""; // reset file input biar bisa import file yang sama lagi
+              e.target.value = "";
               render();
             },
             error: function (err) {
@@ -932,10 +1104,13 @@
             },
           });
         });
+
       // ============================================
-      // INISIALISASI
+      // INIT
       // ============================================
       document.getElementById("tanggal").valueAsDate = new Date();
+      updateSatuanOptions();
+      updateHargaSatuan();
       render();
     </script>
   </body>
