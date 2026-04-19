@@ -3,41 +3,444 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Finance Tool - Tes</title>
+    <title>Expense Tracker - Finance Tool</title>
+
+    <!-- ============================================ -->
+    <!-- STYLING: semua tampilan diatur di bawah ini   -->
+    <!-- ============================================ -->
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        max-width: 600px;
-        margin: 50px auto;
-        padding: 20px;
-        background: #f1f5f9;
+      /* Reset default browser biar konsisten */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-      h1 {
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f1f5f9;
         color: #0f172a;
+        padding: 20px;
+        line-height: 1.5;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      /* Header */
+      header {
+        background: #0f172a;
+        color: white;
+        padding: 24px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+      }
+      header h1 {
+        font-size: 24px;
+      }
+      header p {
+        opacity: 0.8;
+        font-size: 14px;
+        margin-top: 4px;
+      }
+
+      /* Kartu summary (total pengeluaran) */
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
       }
       .card {
         background: white;
         padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+      .card h3 {
+        font-size: 13px;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+      .card .value {
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .card .value.red {
+        color: #dc2626;
+      }
+      .card .value.green {
+        color: #16a34a;
+      }
+      .card .value.orange {
+        color: #ea580c;
+      }
+
+      /* Form input */
+      .form-section,
+      .list-section {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 24px;
+      }
+      .form-section h2,
+      .list-section h2 {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        color: #475569;
+        margin-bottom: 4px;
+        font-weight: 500;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #0f172a;
+      }
+      button {
+        padding: 10px 20px;
+        background: #0f172a;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      button:hover {
+        background: #1e293b;
+      }
+      button.btn-delete {
+        background: #dc2626;
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+      button.btn-delete:hover {
+        background: #b91c1c;
+      }
+
+      .form-actions {
+        margin-top: 16px;
+      }
+
+      /* Tabel */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 14px;
+      }
+      th {
+        background: #f8fafc;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #64748b;
+      }
+      tr:hover td {
+        background: #f8fafc;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .status-lunas {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .status-belum {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #94a3b8;
+      }
+
+      /* Responsif di HP */
+      @media (max-width: 600px) {
+        body {
+          padding: 12px;
+        }
+        header {
+          padding: 16px;
+        }
+        header h1 {
+          font-size: 20px;
+        }
+        table {
+          font-size: 12px;
+        }
+        th,
+        td {
+          padding: 8px;
+        }
       }
     </style>
   </head>
+
   <body>
-    <div class="card">
-      <h1>🎉 Website Pertamaku Online!</h1>
-      <p>
-        Kalau kamu lihat halaman ini di internet (bukan double-click file),
-        berarti kamu berhasil:
-      </p>
-      <ul>
-        <li>✅ Install VS Code</li>
-        <li>✅ Bikin akun GitHub</li>
-        <li>✅ Install GitHub Desktop</li>
-        <li>✅ Upload kode ke GitHub</li>
-        <li>✅ Aktifkan GitHub Pages</li>
-      </ul>
-      <p><strong>Siap bikin Finance Tool beneran!</strong></p>
+    <div class="container">
+      <!-- HEADER -->
+      <header>
+        <h1>💰 Expense Tracker</h1>
+        <p>Catat semua pengeluaran bisnismu di satu tempat</p>
+      </header>
+
+      <!-- SUMMARY CARDS: total pengeluaran, sudah bayar, belum bayar -->
+      <div class="summary">
+        <div class="card">
+          <h3>Total Pengeluaran</h3>
+          <div class="value red" id="total-all">Rp 0</div>
+        </div>
+        <div class="card">
+          <h3>Sudah Dibayar</h3>
+          <div class="value green" id="total-lunas">Rp 0</div>
+        </div>
+        <div class="card">
+          <h3>Belum Dibayar</h3>
+          <div class="value orange" id="total-belum">Rp 0</div>
+        </div>
+        <div class="card">
+          <h3>Jumlah Transaksi</h3>
+          <div class="value" id="total-count">0</div>
+        </div>
+      </div>
+
+      <!-- FORM INPUT EXPENSE BARU -->
+      <div class="form-section">
+        <h2>➕ Tambah Expense Baru</h2>
+        <form id="expense-form">
+          <div class="form-grid">
+            <div>
+              <label for="tanggal">Tanggal</label>
+              <input type="date" id="tanggal" required />
+            </div>
+            <div>
+              <label for="kategori">Kategori</label>
+              <select id="kategori" required>
+                <option value="">-- Pilih --</option>
+                <option value="Pembelian Stok">Pembelian Stok</option>
+                <option value="Operasional">Operasional</option>
+                <option value="Gaji/Upah">Gaji/Upah</option>
+                <option value="Transportasi">Transportasi</option>
+                <option value="Pajak & Admin">Pajak & Admin</option>
+                <option value="Lain-lain">Lain-lain</option>
+              </select>
+            </div>
+            <div>
+              <label for="deskripsi">Deskripsi</label>
+              <input
+                type="text"
+                id="deskripsi"
+                placeholder="contoh: Beli kain batik"
+                required
+              />
+            </div>
+            <div>
+              <label for="jumlah">Jumlah (Rp)</label>
+              <input
+                type="number"
+                id="jumlah"
+                placeholder="500000"
+                min="0"
+                required
+              />
+            </div>
+            <div>
+              <label for="status">Status</label>
+              <select id="status" required>
+                <option value="Lunas">Lunas</option>
+                <option value="Belum">Belum Bayar</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit">Simpan Expense</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- DAFTAR EXPENSE (TABEL) -->
+      <div class="list-section">
+        <h2>📋 Daftar Expense</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Kategori</th>
+              <th>Deskripsi</th>
+              <th>Jumlah</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="expense-table-body">
+            <!-- Baris expense diisi otomatis oleh JavaScript -->
+          </tbody>
+        </table>
+        <div id="empty-state" class="empty-state" style="display: none">
+          Belum ada expense. Tambah yang pertama di atas 👆
+        </div>
+      </div>
     </div>
+
+    <!-- ============================================ -->
+    <!-- LOGIKA: semua fungsi JavaScript di bawah ini  -->
+    <!-- ============================================ -->
+    <script>
+      // Key untuk nyimpen data di browser (LocalStorage)
+      const STORAGE_KEY = "fim_expenses";
+
+      // Ambil semua expense dari browser (atau array kosong kalau belum ada)
+      function getExpenses() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+      }
+
+      // Simpan array expense ke browser
+      function saveExpenses(expenses) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+      }
+
+      // Format angka jadi "Rp 1.500.000"
+      function formatRupiah(angka) {
+        return "Rp " + Number(angka).toLocaleString("id-ID");
+      }
+
+      // Format tanggal "2026-04-19" jadi "19 Apr 2026"
+      function formatTanggal(tanggal) {
+        const d = new Date(tanggal);
+        return d.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        });
+      }
+
+      // Gambar ulang tabel & summary dari data terbaru
+      function render() {
+        const expenses = getExpenses();
+        const tbody = document.getElementById("expense-table-body");
+        const emptyState = document.getElementById("empty-state");
+
+        // Kosongkan tabel dulu
+        tbody.innerHTML = "";
+
+        if (expenses.length === 0) {
+          emptyState.style.display = "block";
+        } else {
+          emptyState.style.display = "none";
+
+          // Urutkan: tanggal terbaru paling atas
+          const sorted = [...expenses].sort((a, b) =>
+            b.tanggal.localeCompare(a.tanggal),
+          );
+
+          sorted.forEach((exp) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+          <td>${formatTanggal(exp.tanggal)}</td>
+          <td>${exp.kategori}</td>
+          <td>${exp.deskripsi}</td>
+          <td>${formatRupiah(exp.jumlah)}</td>
+          <td><span class="status-badge status-${exp.status.toLowerCase()}">${exp.status}</span></td>
+          <td><button class="btn-delete" onclick="hapusExpense('${exp.id}')">Hapus</button></td>
+        `;
+            tbody.appendChild(row);
+          });
+        }
+
+        // Hitung total untuk summary cards
+        const totalAll = expenses.reduce((sum, e) => sum + Number(e.jumlah), 0);
+        const totalLunas = expenses
+          .filter((e) => e.status === "Lunas")
+          .reduce((s, e) => s + Number(e.jumlah), 0);
+        const totalBelum = expenses
+          .filter((e) => e.status === "Belum")
+          .reduce((s, e) => s + Number(e.jumlah), 0);
+
+        document.getElementById("total-all").textContent =
+          formatRupiah(totalAll);
+        document.getElementById("total-lunas").textContent =
+          formatRupiah(totalLunas);
+        document.getElementById("total-belum").textContent =
+          formatRupiah(totalBelum);
+        document.getElementById("total-count").textContent = expenses.length;
+      }
+
+      // Tambah expense baru (dijalankan saat form disubmit)
+      document
+        .getElementById("expense-form")
+        .addEventListener("submit", function (e) {
+          e.preventDefault(); // cegah halaman refresh
+
+          const newExpense = {
+            id: Date.now().toString(), // ID unik pakai timestamp
+            tanggal: document.getElementById("tanggal").value,
+            kategori: document.getElementById("kategori").value,
+            deskripsi: document.getElementById("deskripsi").value,
+            jumlah: document.getElementById("jumlah").value,
+            status: document.getElementById("status").value,
+          };
+
+          const expenses = getExpenses();
+          expenses.push(newExpense);
+          saveExpenses(expenses);
+
+          this.reset(); // kosongkan form
+          // Set tanggal kembali ke hari ini setelah reset
+          document.getElementById("tanggal").valueAsDate = new Date();
+
+          render();
+        });
+
+      // Hapus expense berdasarkan ID
+      function hapusExpense(id) {
+        if (!confirm("Yakin mau hapus expense ini?")) return;
+
+        const expenses = getExpenses().filter((e) => e.id !== id);
+        saveExpenses(expenses);
+        render();
+      }
+
+      // Saat halaman pertama kali dibuka
+      document.getElementById("tanggal").valueAsDate = new Date(); // set tanggal default ke hari ini
+      render(); // tampilkan data yang sudah tersimpan
+    </script>
   </body>
 </html>
