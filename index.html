@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Expense Tracker - Finance Tool</title>
 
-    <!-- ============================================ -->
-    <!-- STYLING: semua tampilan diatur di bawah ini   -->
-    <!-- ============================================ -->
+    <!-- Chart.js: library buat bikin grafik -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <style>
-      /* Reset default browser biar konsisten */
       * {
         margin: 0;
         padding: 0;
@@ -25,11 +24,10 @@
       }
 
       .container {
-        max-width: 1000px;
+        max-width: 1100px;
         margin: 0 auto;
       }
 
-      /* Header */
       header {
         background: #0f172a;
         color: white;
@@ -46,7 +44,7 @@
         margin-top: 4px;
       }
 
-      /* Kartu summary (total pengeluaran) */
+      /* Summary cards */
       .summary {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -79,9 +77,10 @@
         color: #ea580c;
       }
 
-      /* Form input */
       .form-section,
-      .list-section {
+      .list-section,
+      .chart-section,
+      .filter-section {
         background: white;
         padding: 24px;
         border-radius: 12px;
@@ -89,10 +88,14 @@
         margin-bottom: 24px;
       }
       .form-section h2,
-      .list-section h2 {
+      .list-section h2,
+      .chart-section h2,
+      .filter-section h2 {
         font-size: 18px;
         margin-bottom: 16px;
       }
+
+      /* Form */
       .form-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -119,6 +122,7 @@
         outline: none;
         border-color: #0f172a;
       }
+
       button {
         padding: 10px 20px;
         background: #0f172a;
@@ -133,6 +137,15 @@
       button:hover {
         background: #1e293b;
       }
+      button.btn-edit {
+        background: #2563eb;
+        padding: 6px 12px;
+        font-size: 12px;
+        margin-right: 4px;
+      }
+      button.btn-edit:hover {
+        background: #1d4ed8;
+      }
       button.btn-delete {
         background: #dc2626;
         padding: 6px 12px;
@@ -141,9 +154,34 @@
       button.btn-delete:hover {
         background: #b91c1c;
       }
+      button.btn-cancel {
+        background: #64748b;
+        margin-left: 8px;
+      }
+      button.btn-cancel:hover {
+        background: #475569;
+      }
+      button.btn-reset-filter {
+        background: #64748b;
+        padding: 8px 14px;
+        font-size: 13px;
+      }
 
       .form-actions {
         margin-top: 16px;
+      }
+      #form-title {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      #edit-notice {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+        font-size: 13px;
+        display: none;
       }
 
       /* Tabel */
@@ -191,6 +229,12 @@
         color: #94a3b8;
       }
 
+      /* Chart */
+      .chart-container {
+        position: relative;
+        height: 300px;
+      }
+
       /* Responsif di HP */
       @media (max-width: 600px) {
         body {
@@ -209,19 +253,21 @@
         td {
           padding: 8px;
         }
+        .chart-container {
+          height: 250px;
+        }
       }
     </style>
   </head>
 
   <body>
     <div class="container">
-      <!-- HEADER -->
       <header>
         <h1>💰 Expense Tracker</h1>
         <p>Catat semua pengeluaran bisnismu di satu tempat</p>
       </header>
 
-      <!-- SUMMARY CARDS: total pengeluaran, sudah bayar, belum bayar -->
+      <!-- SUMMARY CARDS -->
       <div class="summary">
         <div class="card">
           <h3>Total Pengeluaran</h3>
@@ -241,10 +287,16 @@
         </div>
       </div>
 
-      <!-- FORM INPUT EXPENSE BARU -->
+      <!-- FORM INPUT / EDIT -->
       <div class="form-section">
-        <h2>➕ Tambah Expense Baru</h2>
+        <h2 id="form-title">➕ Tambah Expense Baru</h2>
+        <div id="edit-notice">
+          📝 Mode edit aktif — kamu sedang mengubah expense yang sudah ada.
+        </div>
         <form id="expense-form">
+          <!-- hidden field buat simpan ID saat edit -->
+          <input type="hidden" id="edit-id" value="" />
+
           <div class="form-grid">
             <div>
               <label for="tanggal">Tanggal</label>
@@ -290,14 +342,79 @@
             </div>
           </div>
           <div class="form-actions">
-            <button type="submit">Simpan Expense</button>
+            <button type="submit" id="submit-btn">Simpan Expense</button>
+            <button
+              type="button"
+              class="btn-cancel"
+              id="cancel-btn"
+              style="display: none"
+            >
+              Batal Edit
+            </button>
           </div>
         </form>
       </div>
 
-      <!-- DAFTAR EXPENSE (TABEL) -->
+      <!-- CHART -->
+      <div class="chart-section">
+        <h2>📊 Pengeluaran per Kategori</h2>
+        <div class="chart-container">
+          <canvas id="kategori-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- FILTER -->
+      <div class="filter-section">
+        <h2>🔍 Filter</h2>
+        <div class="form-grid">
+          <div>
+            <label for="filter-bulan">Bulan</label>
+            <select id="filter-bulan">
+              <option value="">Semua Bulan</option>
+              <!-- Diisi otomatis oleh JavaScript -->
+            </select>
+          </div>
+          <div>
+            <label for="filter-kategori">Kategori</label>
+            <select id="filter-kategori">
+              <option value="">Semua Kategori</option>
+              <option value="Pembelian Stok">Pembelian Stok</option>
+              <option value="Operasional">Operasional</option>
+              <option value="Gaji/Upah">Gaji/Upah</option>
+              <option value="Transportasi">Transportasi</option>
+              <option value="Pajak & Admin">Pajak & Admin</option>
+              <option value="Lain-lain">Lain-lain</option>
+            </select>
+          </div>
+          <div>
+            <label for="filter-status">Status</label>
+            <select id="filter-status">
+              <option value="">Semua Status</option>
+              <option value="Lunas">Lunas</option>
+              <option value="Belum">Belum Bayar</option>
+            </select>
+          </div>
+          <div style="display: flex; align-items: flex-end">
+            <button
+              type="button"
+              class="btn-reset-filter"
+              id="reset-filter-btn"
+            >
+              Reset Filter
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DAFTAR EXPENSE -->
       <div class="list-section">
-        <h2>📋 Daftar Expense</h2>
+        <h2>
+          📋 Daftar Expense
+          <span
+            id="filter-info"
+            style="font-size: 13px; font-weight: normal; color: #64748b"
+          ></span>
+        </h2>
         <table>
           <thead>
             <tr>
@@ -309,40 +426,40 @@
               <th>Aksi</th>
             </tr>
           </thead>
-          <tbody id="expense-table-body">
-            <!-- Baris expense diisi otomatis oleh JavaScript -->
-          </tbody>
+          <tbody id="expense-table-body"></tbody>
         </table>
         <div id="empty-state" class="empty-state" style="display: none">
-          Belum ada expense. Tambah yang pertama di atas 👆
+          Belum ada expense yang cocok. Coba reset filter atau tambah expense
+          baru 👆
         </div>
       </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- LOGIKA: semua fungsi JavaScript di bawah ini  -->
-    <!-- ============================================ -->
     <script>
-      // Key untuk nyimpen data di browser (LocalStorage)
+      // ============================================
+      // KONFIGURASI & STATE
+      // ============================================
       const STORAGE_KEY = "fim_expenses";
 
-      // Ambil semua expense dari browser (atau array kosong kalau belum ada)
+      // Menyimpan instance Chart.js biar bisa di-destroy saat update
+      let chartInstance = null;
+
+      // ============================================
+      // HELPER FUNCTIONS
+      // ============================================
       function getExpenses() {
         const data = localStorage.getItem(STORAGE_KEY);
         return data ? JSON.parse(data) : [];
       }
 
-      // Simpan array expense ke browser
       function saveExpenses(expenses) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
       }
 
-      // Format angka jadi "Rp 1.500.000"
       function formatRupiah(angka) {
         return "Rp " + Number(angka).toLocaleString("id-ID");
       }
 
-      // Format tanggal "2026-04-19" jadi "19 Apr 2026"
       function formatTanggal(tanggal) {
         const d = new Date(tanggal);
         return d.toLocaleDateString("id-ID", {
@@ -352,22 +469,151 @@
         });
       }
 
-      // Gambar ulang tabel & summary dari data terbaru
-      function render() {
+      // Ambil "YYYY-MM" dari tanggal "YYYY-MM-DD"
+      function getBulanDariTanggal(tanggal) {
+        return tanggal.substring(0, 7);
+      }
+
+      // Format "2026-04" jadi "April 2026"
+      function formatBulan(bulan) {
+        const [year, month] = bulan.split("-");
+        const namaBulan = [
+          "Januari",
+          "Februari",
+          "Maret",
+          "April",
+          "Mei",
+          "Juni",
+          "Juli",
+          "Agustus",
+          "September",
+          "Oktober",
+          "November",
+          "Desember",
+        ];
+        return namaBulan[parseInt(month) - 1] + " " + year;
+      }
+
+      // ============================================
+      // FILTER LOGIC
+      // ============================================
+      function getFilteredExpenses() {
+        const bulan = document.getElementById("filter-bulan").value;
+        const kategori = document.getElementById("filter-kategori").value;
+        const status = document.getElementById("filter-status").value;
+
+        return getExpenses().filter((exp) => {
+          if (bulan && getBulanDariTanggal(exp.tanggal) !== bulan) return false;
+          if (kategori && exp.kategori !== kategori) return false;
+          if (status && exp.status !== status) return false;
+          return true;
+        });
+      }
+
+      // Update dropdown filter bulan sesuai data yang ada
+      function updateBulanFilter() {
         const expenses = getExpenses();
+        const bulanSet = new Set(
+          expenses.map((e) => getBulanDariTanggal(e.tanggal)),
+        );
+        const bulanList = Array.from(bulanSet).sort().reverse(); // terbaru di atas
+
+        const select = document.getElementById("filter-bulan");
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Semua Bulan</option>';
+        bulanList.forEach((b) => {
+          const opt = document.createElement("option");
+          opt.value = b;
+          opt.textContent = formatBulan(b);
+          select.appendChild(opt);
+        });
+        select.value = currentValue; // restore pilihan sebelumnya
+      }
+
+      // ============================================
+      // CHART
+      // ============================================
+      function renderChart(expenses) {
+        // Group total per kategori
+        const perKategori = {};
+        expenses.forEach((e) => {
+          perKategori[e.kategori] =
+            (perKategori[e.kategori] || 0) + Number(e.jumlah);
+        });
+
+        const labels = Object.keys(perKategori);
+        const data = Object.values(perKategori);
+
+        // Destroy chart lama biar nggak numpuk
+        if (chartInstance) chartInstance.destroy();
+
+        const ctx = document.getElementById("kategori-chart").getContext("2d");
+
+        // Kalau nggak ada data, tampilin pesan
+        if (labels.length === 0) {
+          ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+          ctx.font = "14px sans-serif";
+          ctx.fillStyle = "#94a3b8";
+          ctx.textAlign = "center";
+          ctx.fillText(
+            "Belum ada data untuk divisualisasikan",
+            ctx.canvas.width / 2,
+            ctx.canvas.height / 2,
+          );
+          return;
+        }
+
+        chartInstance = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                data: data,
+                backgroundColor: [
+                  "#3b82f6",
+                  "#ef4444",
+                  "#10b981",
+                  "#f59e0b",
+                  "#8b5cf6",
+                  "#ec4899",
+                  "#64748b",
+                ],
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "right" },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => ctx.label + ": " + formatRupiah(ctx.parsed),
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // ============================================
+      // RENDER TABEL & SUMMARY
+      // ============================================
+      function render() {
+        updateBulanFilter();
+
+        const filtered = getFilteredExpenses();
         const tbody = document.getElementById("expense-table-body");
         const emptyState = document.getElementById("empty-state");
 
-        // Kosongkan tabel dulu
         tbody.innerHTML = "";
 
-        if (expenses.length === 0) {
+        if (filtered.length === 0) {
           emptyState.style.display = "block";
         } else {
           emptyState.style.display = "none";
-
-          // Urutkan: tanggal terbaru paling atas
-          const sorted = [...expenses].sort((a, b) =>
+          const sorted = [...filtered].sort((a, b) =>
             b.tanggal.localeCompare(a.tanggal),
           );
 
@@ -379,18 +625,21 @@
           <td>${exp.deskripsi}</td>
           <td>${formatRupiah(exp.jumlah)}</td>
           <td><span class="status-badge status-${exp.status.toLowerCase()}">${exp.status}</span></td>
-          <td><button class="btn-delete" onclick="hapusExpense('${exp.id}')">Hapus</button></td>
+          <td>
+            <button class="btn-edit" onclick="editExpense('${exp.id}')">Edit</button>
+            <button class="btn-delete" onclick="hapusExpense('${exp.id}')">Hapus</button>
+          </td>
         `;
             tbody.appendChild(row);
           });
         }
 
-        // Hitung total untuk summary cards
-        const totalAll = expenses.reduce((sum, e) => sum + Number(e.jumlah), 0);
-        const totalLunas = expenses
+        // Summary cards pakai data yang sudah difilter (biar konsisten sama tabel)
+        const totalAll = filtered.reduce((sum, e) => sum + Number(e.jumlah), 0);
+        const totalLunas = filtered
           .filter((e) => e.status === "Lunas")
           .reduce((s, e) => s + Number(e.jumlah), 0);
-        const totalBelum = expenses
+        const totalBelum = filtered
           .filter((e) => e.status === "Belum")
           .reduce((s, e) => s + Number(e.jumlah), 0);
 
@@ -400,17 +649,35 @@
           formatRupiah(totalLunas);
         document.getElementById("total-belum").textContent =
           formatRupiah(totalBelum);
-        document.getElementById("total-count").textContent = expenses.length;
+        document.getElementById("total-count").textContent = filtered.length;
+
+        // Info filter aktif di header tabel
+        const bulan = document.getElementById("filter-bulan").value;
+        const kategori = document.getElementById("filter-kategori").value;
+        const status = document.getElementById("filter-status").value;
+        const info = [];
+        if (bulan) info.push(formatBulan(bulan));
+        if (kategori) info.push(kategori);
+        if (status) info.push(status);
+        document.getElementById("filter-info").textContent =
+          info.length > 0 ? "— " + info.join(" • ") : "";
+
+        // Render chart
+        renderChart(filtered);
       }
 
-      // Tambah expense baru (dijalankan saat form disubmit)
+      // ============================================
+      // ADD / EDIT EXPENSE
+      // ============================================
       document
         .getElementById("expense-form")
         .addEventListener("submit", function (e) {
-          e.preventDefault(); // cegah halaman refresh
+          e.preventDefault();
 
-          const newExpense = {
-            id: Date.now().toString(), // ID unik pakai timestamp
+          const editId = document.getElementById("edit-id").value;
+          const expenses = getExpenses();
+
+          const data = {
             tanggal: document.getElementById("tanggal").value,
             kategori: document.getElementById("kategori").value,
             deskripsi: document.getElementById("deskripsi").value,
@@ -418,29 +685,101 @@
             status: document.getElementById("status").value,
           };
 
-          const expenses = getExpenses();
-          expenses.push(newExpense);
+          if (editId) {
+            // MODE EDIT: cari expense dengan id yang sama, update
+            const idx = expenses.findIndex((e) => e.id === editId);
+            if (idx !== -1) {
+              expenses[idx] = { ...expenses[idx], ...data };
+            }
+            exitEditMode();
+          } else {
+            // MODE ADD: tambah baru
+            expenses.push({ id: Date.now().toString(), ...data });
+          }
+
           saveExpenses(expenses);
-
-          this.reset(); // kosongkan form
-          // Set tanggal kembali ke hari ini setelah reset
+          this.reset();
           document.getElementById("tanggal").valueAsDate = new Date();
-
           render();
         });
 
-      // Hapus expense berdasarkan ID
+      // Masuk mode edit: isi form dengan data expense yang dipilih
+      function editExpense(id) {
+        const exp = getExpenses().find((e) => e.id === id);
+        if (!exp) return;
+
+        document.getElementById("edit-id").value = exp.id;
+        document.getElementById("tanggal").value = exp.tanggal;
+        document.getElementById("kategori").value = exp.kategori;
+        document.getElementById("deskripsi").value = exp.deskripsi;
+        document.getElementById("jumlah").value = exp.jumlah;
+        document.getElementById("status").value = exp.status;
+
+        document.getElementById("form-title").innerHTML = "✏️ Edit Expense";
+        document.getElementById("edit-notice").style.display = "block";
+        document.getElementById("submit-btn").textContent = "Update Expense";
+        document.getElementById("cancel-btn").style.display = "inline-block";
+
+        // Scroll ke form biar user lihat
+        document
+          .querySelector(".form-section")
+          .scrollIntoView({ behavior: "smooth" });
+      }
+
+      // Keluar mode edit, reset form ke tampilan "tambah baru"
+      function exitEditMode() {
+        document.getElementById("edit-id").value = "";
+        document.getElementById("form-title").innerHTML =
+          "➕ Tambah Expense Baru";
+        document.getElementById("edit-notice").style.display = "none";
+        document.getElementById("submit-btn").textContent = "Simpan Expense";
+        document.getElementById("cancel-btn").style.display = "none";
+      }
+
+      document
+        .getElementById("cancel-btn")
+        .addEventListener("click", function () {
+          document.getElementById("expense-form").reset();
+          document.getElementById("tanggal").valueAsDate = new Date();
+          exitEditMode();
+        });
+
+      // ============================================
+      // DELETE
+      // ============================================
       function hapusExpense(id) {
         if (!confirm("Yakin mau hapus expense ini?")) return;
-
         const expenses = getExpenses().filter((e) => e.id !== id);
         saveExpenses(expenses);
         render();
       }
 
-      // Saat halaman pertama kali dibuka
-      document.getElementById("tanggal").valueAsDate = new Date(); // set tanggal default ke hari ini
-      render(); // tampilkan data yang sudah tersimpan
+      // ============================================
+      // FILTER EVENTS
+      // ============================================
+      document
+        .getElementById("filter-bulan")
+        .addEventListener("change", render);
+      document
+        .getElementById("filter-kategori")
+        .addEventListener("change", render);
+      document
+        .getElementById("filter-status")
+        .addEventListener("change", render);
+      document
+        .getElementById("reset-filter-btn")
+        .addEventListener("click", function () {
+          document.getElementById("filter-bulan").value = "";
+          document.getElementById("filter-kategori").value = "";
+          document.getElementById("filter-status").value = "";
+          render();
+        });
+
+      // ============================================
+      // INISIALISASI
+      // ============================================
+      document.getElementById("tanggal").valueAsDate = new Date();
+      render();
     </script>
   </body>
 </html>
