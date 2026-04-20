@@ -3,31 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Expense Tracker - Finance Tool</title>
-
+    <title>Finance Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
     <style>
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
-
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: -apple-system, "Segoe UI", sans-serif;
         background: #f1f5f9;
         color: #0f172a;
         padding: 20px;
         line-height: 1.5;
       }
-
       .container {
         max-width: 1100px;
         margin: 0 auto;
       }
-
       header {
         background: #0f172a;
         color: white;
@@ -43,7 +38,6 @@
         font-size: 14px;
         margin-top: 4px;
       }
-
       .summary {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -63,7 +57,7 @@
         margin-bottom: 8px;
       }
       .card .value {
-        font-size: 24px;
+        font-size: 22px;
         font-weight: bold;
       }
       .card .value.red {
@@ -72,10 +66,9 @@
       .card .value.green {
         color: #16a34a;
       }
-      .card .value.orange {
-        color: #ea580c;
+      .card .value.blue {
+        color: #2563eb;
       }
-
       .form-section,
       .list-section,
       .chart-section,
@@ -119,7 +112,6 @@
         outline: none;
         border-color: #0f172a;
       }
-
       button {
         padding: 10px 20px;
         background: #0f172a;
@@ -140,30 +132,25 @@
         font-size: 12px;
         margin-right: 4px;
       }
-      button.btn-edit:hover {
-        background: #1d4ed8;
-      }
       button.btn-delete {
         background: #dc2626;
         padding: 6px 12px;
         font-size: 12px;
       }
-      button.btn-delete:hover {
-        background: #b91c1c;
-      }
       button.btn-cancel {
         background: #64748b;
         margin-left: 8px;
       }
-      button.btn-cancel:hover {
+      button.btn-secondary {
         background: #475569;
+        padding: 8px 14px;
+        font-size: 13px;
       }
       button.btn-reset-filter {
         background: #64748b;
         padding: 8px 14px;
         font-size: 13px;
       }
-
       .form-actions {
         margin-top: 16px;
       }
@@ -180,8 +167,37 @@
         font-size: 13px;
         display: none;
       }
-
-      /* Tampilan live Harga Satuan */
+      .tipe-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .tipe-tab {
+        padding: 8px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 999px;
+        background: white;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        color: #64748b;
+      }
+      .tipe-tab.active.masuk {
+        border-color: #16a34a;
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .tipe-tab.active.keluar {
+        border-color: #dc2626;
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .tipe-tab.active.transfer {
+        border-color: #2563eb;
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
       .harga-satuan-box {
         margin-top: 12px;
         padding: 10px 14px;
@@ -191,19 +207,13 @@
         font-size: 14px;
         color: #1e40af;
       }
-      .harga-satuan-box strong {
-        color: #1e3a8a;
-      }
-
-      /* Scroll horizontal untuk tabel di layar kecil */
       .table-wrapper {
         overflow-x: auto;
       }
-
       table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 800px;
+        min-width: 900px;
       }
       th,
       td {
@@ -222,16 +232,25 @@
       tr:hover td {
         background: #f8fafc;
       }
-      td.jumlah-cell {
-        white-space: nowrap;
-      }
-      td.jumlah-cell .sub {
-        display: block;
+      .tipe-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
         font-size: 11px;
-        color: #64748b;
-        margin-top: 2px;
+        font-weight: 600;
       }
-
+      .tipe-badge.masuk {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .tipe-badge.keluar {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .tipe-badge.transfer {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
       .status-badge {
         display: inline-block;
         padding: 3px 10px;
@@ -240,26 +259,133 @@
         font-weight: 600;
         text-transform: uppercase;
       }
-      .status-lunas {
+      .status-lunas,
+      .status-diterima {
         background: #dcfce7;
         color: #15803d;
       }
-      .status-belum {
+      .status-belum,
+      .status-pending {
         background: #fee2e2;
         color: #b91c1c;
       }
-
       .empty-state {
         text-align: center;
         padding: 40px 20px;
         color: #94a3b8;
       }
-
       .chart-container {
         position: relative;
         height: 300px;
       }
-
+      .manage-list {
+        list-style: none;
+        margin: 12px 0;
+      }
+      .manage-list li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #f8fafc;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+      .manage-list li .name {
+        flex: 1;
+      }
+      .manage-list li button {
+        padding: 4px 10px;
+        font-size: 11px;
+      }
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .modal {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 500px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      .modal h3 {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      .modal-close {
+        float: right;
+        background: transparent;
+        color: #64748b;
+        padding: 4px 10px;
+        font-size: 18px;
+        margin: 0;
+      }
+      .modal-close:hover {
+        background: #f1f5f9;
+      }
+      .logout-btn {
+        background: #dc2626 !important;
+      }
+      body.locked .container {
+        display: none;
+      }
+      #login-overlay {
+        position: fixed;
+        inset: 0;
+        background: #0f172a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 20px;
+      }
+      #login-overlay.hidden {
+        display: none;
+      }
+      .login-box {
+        background: white;
+        padding: 32px;
+        border-radius: 12px;
+        max-width: 400px;
+        width: 100%;
+      }
+      .login-box h2 {
+        font-size: 20px;
+        margin-bottom: 8px;
+      }
+      .login-box p {
+        font-size: 14px;
+        color: #64748b;
+        margin-bottom: 20px;
+      }
+      .login-box input {
+        margin-bottom: 12px;
+        padding: 12px;
+        font-size: 15px;
+      }
+      .login-box button {
+        width: 100%;
+        padding: 12px;
+      }
+      .login-box .error {
+        background: #fee2e2;
+        color: #b91c1c;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        margin-top: 12px;
+        display: none;
+      }
       @media (max-width: 600px) {
         body {
           padding: 12px;
@@ -279,66 +405,26 @@
           height: 250px;
         }
       }
-      /* ==================== LOGIN GATE ==================== */
-    body.locked .container { display: none; }
-    #login-overlay {
-      position: fixed;
-      inset: 0;
-      background: #0f172a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      padding: 20px;
-    }
-    #login-overlay.hidden { display: none; }
-    .login-box {
-      background: white;
-      padding: 32px;
-      border-radius: 12px;
-      max-width: 400px;
-      width: 100%;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    }
-    .login-box h2 { font-size: 20px; margin-bottom: 8px; color: #0f172a; }
-    .login-box p { font-size: 14px; color: #64748b; margin-bottom: 20px; }
-    .login-box input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 15px;
-      margin-bottom: 12px;
-    }
-    .login-box button { width: 100%; padding: 12px; }
-    .login-box .error {
-      background: #fee2e2;
-      color: #b91c1c;
-      padding: 10px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      margin-top: 12px;
-      display: none;
-    }
-    .logout-btn { background: #dc2626 !important; }
     </style>
   </head>
-
-  <body>
-    <body class="locked">
-
-<!-- Login overlay: muncul sampai user masukkan password yang bener -->
-<div id="login-overlay">
-  <div class="login-box">
-    <h2>🔒 Finance Tracker</h2>
-    <p>Masukkan password untuk melanjutkan.</p>
-    <form id="login-form">
-      <input type="password" id="password-input" placeholder="Password" required autofocus>
-      <button type="submit">Masuk</button>
-    </form>
-    <div class="error" id="login-error">Password salah. Coba lagi.</div>
-  </div>
-</div>
+  <body class="locked">
+    <div id="login-overlay">
+      <div class="login-box">
+        <h2>🔒 Finance Tracker</h2>
+        <p>Masukkan password untuk melanjutkan.</p>
+        <form id="login-form">
+          <input
+            type="password"
+            id="password-input"
+            placeholder="Password"
+            required
+            autofocus
+          />
+          <button type="submit">Masuk</button>
+        </form>
+        <div class="error" id="login-error">Password salah. Coba lagi.</div>
+      </div>
+    </div>
 
     <div class="container">
       <header>
@@ -352,15 +438,25 @@
           "
         >
           <div>
-            <h1>💰 Expense Tracker</h1>
-            <p>Catat semua pengeluaran bisnismu di satu tempat</p>
+            <h1>💰 Finance Tracker</h1>
+            <p>Catat pemasukan, pengeluaran, dan transfer antar akun</p>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <button type="button" class="btn-secondary" id="manage-akun-btn">
+              🏦 Kelola Akun
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              id="manage-kegiatan-btn"
+            >
+              📁 Kelola Kegiatan
+            </button>
             <button type="button" id="export-btn" style="background: #16a34a">
-              📥 Export CSV
+              📥 Export
             </button>
             <button type="button" id="import-btn" style="background: #2563eb">
-              📤 Import CSV
+              📤 Import
             </button>
             <input
               type="file"
@@ -372,19 +468,18 @@
         </div>
       </header>
 
-      <!-- SUMMARY CARDS -->
       <div class="summary">
         <div class="card">
-          <h3>Total Pengeluaran</h3>
-          <div class="value red" id="total-all">Rp 0</div>
+          <h3>Saldo Bersih</h3>
+          <div class="value blue" id="total-saldo">Rp 0</div>
         </div>
         <div class="card">
-          <h3>Sudah Dibayar</h3>
-          <div class="value green" id="total-lunas">Rp 0</div>
+          <h3>Uang Masuk</h3>
+          <div class="value green" id="total-masuk">Rp 0</div>
         </div>
         <div class="card">
-          <h3>Belum Dibayar</h3>
-          <div class="value orange" id="total-belum">Rp 0</div>
+          <h3>Uang Keluar</h3>
+          <div class="value red" id="total-keluar">Rp 0</div>
         </div>
         <div class="card">
           <h3>Jumlah Transaksi</h3>
@@ -392,14 +487,29 @@
         </div>
       </div>
 
-      <!-- FORM -->
       <div class="form-section">
-        <h2 id="form-title">➕ Tambah Expense Baru</h2>
-        <div id="edit-notice">
-          📝 Mode edit aktif — kamu sedang mengubah expense yang sudah ada.
+        <h2 id="form-title">➕ Tambah Transaksi Baru</h2>
+        <div id="edit-notice">📝 Mode edit aktif.</div>
+
+        <div class="tipe-tabs">
+          <button
+            type="button"
+            class="tipe-tab keluar active"
+            data-tipe="Keluar"
+          >
+            💸 Uang Keluar
+          </button>
+          <button type="button" class="tipe-tab masuk" data-tipe="Masuk">
+            💰 Uang Masuk
+          </button>
+          <button type="button" class="tipe-tab transfer" data-tipe="Transfer">
+            🔄 Transfer
+          </button>
         </div>
-        <form id="expense-form">
-          <input type="hidden" id="edit-id" value="" />
+
+        <form id="trx-form">
+          <input type="hidden" id="edit-id" />
+          <input type="hidden" id="tipe" value="Keluar" />
 
           <div class="form-grid">
             <div>
@@ -407,8 +517,20 @@
               <input type="date" id="tanggal" required />
             </div>
             <div>
+              <label for="kegiatan">Kegiatan</label>
+              <select id="kegiatan" required></select>
+            </div>
+            <div id="akun-wrapper">
+              <label for="akun"><span id="akun-label">Akun</span></label>
+              <select id="akun" required></select>
+            </div>
+            <div id="akun-ke-wrapper" style="display: none">
+              <label for="akun-ke">Ke Akun</label>
+              <select id="akun-ke"></select>
+            </div>
+            <div id="kategori-wrapper">
               <label for="kategori">Kategori</label>
-              <select id="kategori" required>
+              <select id="kategori">
                 <option value="">-- Pilih --</option>
                 <option value="Pembelian Stok">Pembelian Stok</option>
                 <option value="Operasional">Operasional</option>
@@ -427,7 +549,7 @@
                 required
               />
             </div>
-            <div>
+            <div id="qty-wrapper">
               <label for="qty">Qty</label>
               <input
                 type="number"
@@ -435,25 +557,20 @@
                 placeholder="1"
                 min="0.01"
                 step="any"
-                required
               />
             </div>
-            <div>
+            <div id="satuan-wrapper">
               <label for="satuan">Satuan</label>
-              <select id="satuan" required>
-                <option value="">-- Pilih Kategori Dulu --</option>
+              <select id="satuan">
+                <option value="">-- Pilih Kegiatan Dulu --</option>
               </select>
             </div>
             <div id="satuan-custom-wrapper" style="display: none">
               <label for="satuan-custom">Satuan (isi sendiri)</label>
-              <input
-                type="text"
-                id="satuan-custom"
-                placeholder="contoh: karung"
-              />
+              <input type="text" id="satuan-custom" />
             </div>
             <div>
-              <label for="jumlah">Jumlah Total (Rp)</label>
+              <label for="jumlah">Jumlah (Rp)</label>
               <input
                 type="number"
                 id="jumlah"
@@ -465,22 +582,25 @@
             <div>
               <label for="status">Status</label>
               <select id="status" required>
-                <option value="Lunas">Lunas</option>
-                <option value="Belum">Belum Bayar</option>
+                <option value="Lunas">Lunas / Diterima</option>
+                <option value="Belum">Belum / Pending</option>
               </select>
             </div>
           </div>
 
-          <!-- Live display Harga Satuan -->
-          <div class="harga-satuan-box" id="harga-satuan-box">
+          <div
+            class="harga-satuan-box"
+            id="harga-satuan-box"
+            style="display: none"
+          >
             Harga Satuan: <strong id="harga-satuan-value">—</strong>
             <span style="color: #64748b; font-size: 12px; margin-left: 8px"
-              >(Jumlah ÷ Qty, otomatis)</span
+              >(otomatis)</span
             >
           </div>
 
           <div class="form-actions">
-            <button type="submit" id="submit-btn">Simpan Expense</button>
+            <button type="submit" id="submit-btn">Simpan Transaksi</button>
             <button
               type="button"
               class="btn-cancel"
@@ -493,42 +613,39 @@
         </form>
       </div>
 
-      <!-- CHART -->
       <div class="chart-section">
-        <h2>📊 Pengeluaran per Kategori</h2>
-        <div class="chart-container">
-          <canvas id="kategori-chart"></canvas>
-        </div>
+        <h2>📊 Pengeluaran per Kegiatan</h2>
+        <div class="chart-container"><canvas id="kegiatan-chart"></canvas></div>
       </div>
 
-      <!-- FILTER -->
       <div class="filter-section">
         <h2>🔍 Filter</h2>
         <div class="form-grid">
           <div>
-            <label for="filter-bulan">Bulan</label>
+            <label>Bulan</label>
             <select id="filter-bulan">
               <option value="">Semua Bulan</option>
             </select>
           </div>
           <div>
-            <label for="filter-kategori">Kategori</label>
-            <select id="filter-kategori">
-              <option value="">Semua Kategori</option>
-              <option value="Pembelian Stok">Pembelian Stok</option>
-              <option value="Operasional">Operasional</option>
-              <option value="Gaji/Upah">Gaji/Upah</option>
-              <option value="Transportasi">Transportasi</option>
-              <option value="Pajak & Admin">Pajak & Admin</option>
-              <option value="Lain-lain">Lain-lain</option>
+            <label>Tipe</label>
+            <select id="filter-tipe">
+              <option value="">Semua Tipe</option>
+              <option value="Masuk">Uang Masuk</option>
+              <option value="Keluar">Uang Keluar</option>
+              <option value="Transfer">Transfer</option>
             </select>
           </div>
           <div>
-            <label for="filter-status">Status</label>
-            <select id="filter-status">
-              <option value="">Semua Status</option>
-              <option value="Lunas">Lunas</option>
-              <option value="Belum">Belum Bayar</option>
+            <label>Kegiatan</label>
+            <select id="filter-kegiatan">
+              <option value="">Semua Kegiatan</option>
+            </select>
+          </div>
+          <div>
+            <label>Akun</label>
+            <select id="filter-akun">
+              <option value="">Semua Akun</option>
             </select>
           </div>
           <div style="display: flex; align-items: flex-end">
@@ -537,16 +654,15 @@
               class="btn-reset-filter"
               id="reset-filter-btn"
             >
-              Reset Filter
+              Reset
             </button>
           </div>
         </div>
       </div>
 
-      <!-- LIST -->
       <div class="list-section">
         <h2>
-          📋 Daftar Expense
+          📋 Daftar Transaksi
           <span
             id="filter-info"
             style="font-size: 13px; font-weight: normal; color: #64748b"
@@ -557,108 +673,83 @@
             <thead>
               <tr>
                 <th>Tanggal</th>
+                <th>Tipe</th>
+                <th>Kegiatan</th>
+                <th>Akun</th>
                 <th>Kategori</th>
                 <th>Deskripsi</th>
-                <th>Qty</th>
-                <th>Satuan</th>
                 <th>Jumlah</th>
                 <th>Status</th>
                 <th>Aksi</th>
               </tr>
             </thead>
-            <tbody id="expense-table-body"></tbody>
+            <tbody id="trx-table-body"></tbody>
           </table>
         </div>
         <div id="empty-state" class="empty-state" style="display: none">
-          Belum ada expense yang cocok. Coba reset filter atau tambah expense
-          baru 👆
+          Belum ada transaksi. Tambah yang pertama di atas 👆
         </div>
       </div>
     </div>
 
     <script>
-        // ============================================
-  // PASSWORD GATE
-  // ============================================
-  // Hash SHA-256 dari password kamu. GANTI placeholder di bawah ini.
-  const PASSWORD_HASH = '33d8864c3469a31e9921cd6b49d345a1478e1f03ac0a14fdd6730be953791761';
-  const AUTH_KEY = 'fim_authed';
+      // ============================================
+      // PASSWORD GATE
+      // ============================================
+      const PASSWORD_HASH =
+        "33d8864c3469a31e9921cd6b49d345a1478e1f03ac0a14fdd6730be953791761";
+      const AUTH_KEY = "fim_authed";
 
-  async function hashPassword(password) {
-    const data = new TextEncoder().encode(password);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash))
-      .map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  function unlockApp() {
-    document.body.classList.remove('locked');
-    document.getElementById('login-overlay').classList.add('hidden');
-    // Re-render biar chart dimensinya bener setelah container visible
-    if (typeof render === 'function') setTimeout(render, 0);
-  }
-
-  function lockApp() {
-    document.body.classList.add('locked');
-    document.getElementById('login-overlay').classList.remove('hidden');
-    document.getElementById('password-input').focus();
-  }
-
-  function logout() {
-    sessionStorage.removeItem(AUTH_KEY);
-    document.getElementById('password-input').value = '';
-    lockApp();
-  }
-
-  // Handle login form submit
-  document.getElementById('login-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const password = document.getElementById('password-input').value;
-    const errorDiv = document.getElementById('login-error');
-    try {
-      const hash = await hashPassword(password);
-      if (hash === PASSWORD_HASH) {
-        sessionStorage.setItem(AUTH_KEY, 'yes');
-        errorDiv.style.display = 'none';
-        document.getElementById('password-input').value = '';
-        unlockApp();
-      } else {
-        errorDiv.style.display = 'block';
-        document.getElementById('password-input').value = '';
-        document.getElementById('password-input').focus();
+      async function hashPassword(password) {
+        const data = new TextEncoder().encode(password);
+        const hash = await crypto.subtle.digest("SHA-256", data);
+        return Array.from(new Uint8Array(hash))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
       }
-    } catch (err) {
-      errorDiv.textContent = 'Error: ' + err.message;
-      errorDiv.style.display = 'block';
-    }
-  });
+      function unlockApp() {
+        document.body.classList.remove("locked");
+        document.getElementById("login-overlay").classList.add("hidden");
+        if (typeof render === "function") setTimeout(render, 0);
+      }
+      function lockApp() {
+        document.body.classList.add("locked");
+        document.getElementById("login-overlay").classList.remove("hidden");
+        document.getElementById("password-input").focus();
+      }
+      function logout() {
+        sessionStorage.removeItem(AUTH_KEY);
+        document.getElementById("password-input").value = "";
+        lockApp();
+      }
+      document
+        .getElementById("login-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const pw = document.getElementById("password-input").value;
+          const err = document.getElementById("login-error");
+          const hash = await hashPassword(pw);
+          if (hash === PASSWORD_HASH) {
+            sessionStorage.setItem(AUTH_KEY, "yes");
+            err.style.display = "none";
+            document.getElementById("password-input").value = "";
+            unlockApp();
+          } else {
+            err.style.display = "block";
+            document.getElementById("password-input").value = "";
+          }
+        });
 
-  // Tambah tombol Logout di header (di sebelah Export/Import)
-  const headerRight = document.querySelector('header > div > div:last-child');
-  if (headerRight) {
-    const logoutBtn = document.createElement('button');
-    logoutBtn.type = 'button';
-    logoutBtn.className = 'logout-btn';
-    logoutBtn.textContent = '🔒 Logout';
-    logoutBtn.addEventListener('click', logout);
-    headerRight.appendChild(logoutBtn);
-  }
-
-  // Cek auth state di awal (setTimeout supaya render() udah keburu ter-define)
-  setTimeout(function() {
-    if (sessionStorage.getItem(AUTH_KEY) === 'yes') {
-      unlockApp();
-    } else {
-      lockApp();
-    }
-  }, 0);
       // ============================================
-      // KONFIGURASI
+      // STORAGE KEYS
       // ============================================
-      const STORAGE_KEY = "fim_expenses";
+      const STORAGE_TRX = "fim_transactions";
+      const STORAGE_AKUN = "fim_akun";
+      const STORAGE_KEGIATAN = "fim_kegiatan";
 
-      // Mapping satuan per kategori — aku sediakan yang paling umum per kategori.
-      // Kamu bisa tambah/edit list-nya di sini kapan aja.
+      // Default kegiatan pre-seed
+      const DEFAULT_KEGIATAN = ["Pamalayan", "Sinkas", "Toko", "Kantor", "PT"];
+
       const SATUAN_MAP = {
         "Pembelian Stok": [
           "pcs",
@@ -680,31 +771,55 @@
       let chartInstance = null;
 
       // ============================================
-      // HELPERS
+      // STORAGE HELPERS
       // ============================================
-      function getExpenses() {
-        const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : [];
+      function getTrx() {
+        const d = localStorage.getItem(STORAGE_TRX);
+        return d ? JSON.parse(d) : [];
       }
-      function saveExpenses(expenses) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+      function saveTrx(arr) {
+        localStorage.setItem(STORAGE_TRX, JSON.stringify(arr));
       }
-      function formatRupiah(angka) {
-        return "Rp " + Number(angka).toLocaleString("id-ID");
+
+      function getAkun() {
+        const d = localStorage.getItem(STORAGE_AKUN);
+        return d ? JSON.parse(d) : [];
       }
-      function formatTanggal(tanggal) {
-        const d = new Date(tanggal);
+      function saveAkun(arr) {
+        localStorage.setItem(STORAGE_AKUN, JSON.stringify(arr));
+      }
+
+      function getKegiatan() {
+        const d = localStorage.getItem(STORAGE_KEGIATAN);
+        if (!d) {
+          saveKegiatan(DEFAULT_KEGIATAN);
+          return [...DEFAULT_KEGIATAN];
+        }
+        return JSON.parse(d);
+      }
+      function saveKegiatan(arr) {
+        localStorage.setItem(STORAGE_KEGIATAN, JSON.stringify(arr));
+      }
+
+      // ============================================
+      // FORMATTERS
+      // ============================================
+      function formatRupiah(n) {
+        return "Rp " + Number(n || 0).toLocaleString("id-ID");
+      }
+      function formatTanggal(t) {
+        const d = new Date(t);
         return d.toLocaleDateString("id-ID", {
           day: "numeric",
           month: "short",
           year: "numeric",
         });
       }
-      function getBulanDariTanggal(tanggal) {
-        return tanggal.substring(0, 7);
+      function getBulan(t) {
+        return (t || "").substring(0, 7);
       }
-      function formatBulan(bulan) {
-        const [year, month] = bulan.split("-");
+      function formatBulan(b) {
+        const [y, m] = b.split("-");
         const nama = [
           "Januari",
           "Februari",
@@ -719,145 +834,230 @@
           "November",
           "Desember",
         ];
-        return nama[parseInt(month) - 1] + " " + year;
+        return nama[parseInt(m) - 1] + " " + y;
       }
 
       // ============================================
-      // SATUAN DROPDOWN — dinamis berdasarkan kategori
+      // TIPE TABS — ganti tipe, tampilan form berubah
+      // ============================================
+      function setTipe(tipe) {
+        document.getElementById("tipe").value = tipe;
+
+        // Update tab visual
+        document.querySelectorAll(".tipe-tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.tipe === tipe);
+        });
+
+        // Show/hide field berdasarkan tipe
+        const kategoriWrapper = document.getElementById("kategori-wrapper");
+        const qtyWrapper = document.getElementById("qty-wrapper");
+        const satuanWrapper = document.getElementById("satuan-wrapper");
+        const satuanCustomWrapper = document.getElementById(
+          "satuan-custom-wrapper",
+        );
+        const akunKeWrapper = document.getElementById("akun-ke-wrapper");
+        const akunLabel = document.getElementById("akun-label");
+        const hargaBox = document.getElementById("harga-satuan-box");
+        const kategoriSelect = document.getElementById("kategori");
+        const qtyInput = document.getElementById("qty");
+        const satuanSelect = document.getElementById("satuan");
+        const statusSelect = document.getElementById("status");
+
+        if (tipe === "Keluar") {
+          akunLabel.textContent = "Dari Akun";
+          akunKeWrapper.style.display = "none";
+          kategoriWrapper.style.display = "";
+          qtyWrapper.style.display = "";
+          satuanWrapper.style.display = "";
+          kategoriSelect.required = true;
+          qtyInput.required = true;
+          satuanSelect.required = true;
+          statusSelect.options[0].text = "Lunas";
+          statusSelect.options[1].text = "Belum Bayar";
+          hargaBox.style.display = "";
+        } else if (tipe === "Masuk") {
+          akunLabel.textContent = "Ke Akun";
+          akunKeWrapper.style.display = "none";
+          kategoriWrapper.style.display = "none";
+          qtyWrapper.style.display = "none";
+          satuanWrapper.style.display = "none";
+          satuanCustomWrapper.style.display = "none";
+          kategoriSelect.required = false;
+          qtyInput.required = false;
+          satuanSelect.required = false;
+          statusSelect.options[0].text = "Diterima";
+          statusSelect.options[1].text = "Pending";
+          hargaBox.style.display = "none";
+        } else if (tipe === "Transfer") {
+          akunLabel.textContent = "Dari Akun";
+          akunKeWrapper.style.display = "";
+          kategoriWrapper.style.display = "none";
+          qtyWrapper.style.display = "none";
+          satuanWrapper.style.display = "none";
+          satuanCustomWrapper.style.display = "none";
+          kategoriSelect.required = false;
+          qtyInput.required = false;
+          satuanSelect.required = false;
+          statusSelect.options[0].text = "Selesai";
+          statusSelect.options[1].text = "Pending";
+          hargaBox.style.display = "none";
+        }
+      }
+
+      document.querySelectorAll(".tipe-tab").forEach((tab) => {
+        tab.addEventListener("click", () => setTipe(tab.dataset.tipe));
+      });
+
+      // ============================================
+      // POPULATE DROPDOWNS (akun, kegiatan)
+      // ============================================
+      function populateAkunDropdown() {
+        const akun = getAkun();
+        const selects = ["akun", "akun-ke", "filter-akun"];
+        selects.forEach((id) => {
+          const el = document.getElementById(id);
+          const current = el.value;
+          if (id === "filter-akun") {
+            el.innerHTML = '<option value="">Semua Akun</option>';
+          } else {
+            el.innerHTML =
+              akun.length === 0
+                ? '<option value="">-- Tambah akun dulu --</option>'
+                : '<option value="">-- Pilih Akun --</option>';
+          }
+          akun.forEach((a) => {
+            const opt = document.createElement("option");
+            opt.value = a;
+            opt.textContent = a;
+            el.appendChild(opt);
+          });
+          el.value = current;
+        });
+      }
+
+      function populateKegiatanDropdown() {
+        const keg = getKegiatan();
+        const selects = ["kegiatan", "filter-kegiatan"];
+        selects.forEach((id) => {
+          const el = document.getElementById(id);
+          const current = el.value;
+          el.innerHTML =
+            id === "filter-kegiatan"
+              ? '<option value="">Semua Kegiatan</option>'
+              : '<option value="">-- Pilih Kegiatan --</option>';
+          keg.forEach((k) => {
+            const opt = document.createElement("option");
+            opt.value = k;
+            opt.textContent = k;
+            el.appendChild(opt);
+          });
+          el.value = current;
+        });
+      }
+
+      // ============================================
+      // SATUAN DROPDOWN (mengikuti kategori)
       // ============================================
       function updateSatuanOptions() {
         const kategori = document.getElementById("kategori").value;
-        const select = document.getElementById("satuan");
+        const sel = document.getElementById("satuan");
         const wrapper = document.getElementById("satuan-custom-wrapper");
-        const customInput = document.getElementById("satuan-custom");
-
-        // Reset
-        select.innerHTML = "";
         wrapper.style.display = "none";
-        customInput.required = false;
-        customInput.value = "";
-
+        sel.innerHTML = "";
         if (!kategori) {
-          select.innerHTML =
-            '<option value="">-- Pilih Kategori Dulu --</option>';
+          sel.innerHTML = '<option value="">-- Pilih Kategori Dulu --</option>';
           return;
         }
-
-        select.innerHTML = '<option value="">-- Pilih Satuan --</option>';
-        (SATUAN_MAP[kategori] || []).forEach((sat) => {
+        sel.innerHTML = '<option value="">-- Pilih --</option>';
+        (SATUAN_MAP[kategori] || []).forEach((s) => {
           const opt = document.createElement("option");
-          opt.value = sat;
-          opt.textContent = sat;
-          select.appendChild(opt);
+          opt.value = s;
+          opt.textContent = s;
+          sel.appendChild(opt);
         });
-
-        // Opsi "Lainnya" selalu ada di akhir
-        const lainnya = document.createElement("option");
-        lainnya.value = "__lainnya__";
-        lainnya.textContent = "Lainnya (isi sendiri)";
-        select.appendChild(lainnya);
+        const lain = document.createElement("option");
+        lain.value = "__lainnya__";
+        lain.textContent = "Lainnya (isi sendiri)";
+        sel.appendChild(lain);
       }
 
-      // Saat user pilih "Lainnya", tampilkan input text bebas
       function handleSatuanChange() {
         const val = document.getElementById("satuan").value;
         const wrapper = document.getElementById("satuan-custom-wrapper");
-        const customInput = document.getElementById("satuan-custom");
-        if (val === "__lainnya__") {
-          wrapper.style.display = "";
-          customInput.required = true;
-          customInput.focus();
-        } else {
-          wrapper.style.display = "none";
-          customInput.required = false;
-          customInput.value = "";
-        }
+        wrapper.style.display = val === "__lainnya__" ? "" : "none";
       }
 
-      // Ambil value satuan final (dropdown atau custom)
       function getSatuanValue() {
-        const dropdown = document.getElementById("satuan").value;
-        if (dropdown === "__lainnya__") {
-          return document.getElementById("satuan-custom").value.trim();
-        }
-        return dropdown;
+        const v = document.getElementById("satuan").value;
+        return v === "__lainnya__"
+          ? document.getElementById("satuan-custom").value.trim()
+          : v;
       }
 
-      // ============================================
-      // HARGA SATUAN — live calculation
-      // ============================================
       function updateHargaSatuan() {
         const qty = parseFloat(document.getElementById("qty").value) || 0;
-        const jumlah = parseFloat(document.getElementById("jumlah").value) || 0;
-        const display = document.getElementById("harga-satuan-value");
-
-        if (qty > 0 && jumlah > 0) {
-          display.textContent = formatRupiah(jumlah / qty);
-        } else {
-          display.textContent = "—";
-        }
+        const jml = parseFloat(document.getElementById("jumlah").value) || 0;
+        const el = document.getElementById("harga-satuan-value");
+        el.textContent = qty > 0 && jml > 0 ? formatRupiah(jml / qty) : "—";
       }
 
       // ============================================
       // FILTER
       // ============================================
-      function getFilteredExpenses() {
-        const bulan = document.getElementById("filter-bulan").value;
-        const kategori = document.getElementById("filter-kategori").value;
-        const status = document.getElementById("filter-status").value;
-
-        return getExpenses().filter((exp) => {
-          if (bulan && getBulanDariTanggal(exp.tanggal) !== bulan) return false;
-          if (kategori && exp.kategori !== kategori) return false;
-          if (status && exp.status !== status) return false;
+      function getFiltered() {
+        const b = document.getElementById("filter-bulan").value;
+        const t = document.getElementById("filter-tipe").value;
+        const k = document.getElementById("filter-kegiatan").value;
+        const a = document.getElementById("filter-akun").value;
+        return getTrx().filter((x) => {
+          if (b && getBulan(x.tanggal) !== b) return false;
+          if (t && x.tipe !== t) return false;
+          if (k && x.kegiatan !== k) return false;
+          if (a && x.akun !== a && x.akun_ke !== a) return false;
           return true;
         });
       }
+
       function updateBulanFilter() {
-        const bulanSet = new Set(
-          getExpenses().map((e) => getBulanDariTanggal(e.tanggal)),
-        );
-        const bulanList = Array.from(bulanSet).sort().reverse();
-        const select = document.getElementById("filter-bulan");
-        const current = select.value;
-        select.innerHTML = '<option value="">Semua Bulan</option>';
-        bulanList.forEach((b) => {
+        const set = new Set(getTrx().map((x) => getBulan(x.tanggal)));
+        const list = Array.from(set).filter(Boolean).sort().reverse();
+        const sel = document.getElementById("filter-bulan");
+        const current = sel.value;
+        sel.innerHTML = '<option value="">Semua Bulan</option>';
+        list.forEach((b) => {
           const opt = document.createElement("option");
           opt.value = b;
           opt.textContent = formatBulan(b);
-          select.appendChild(opt);
+          sel.appendChild(opt);
         });
-        select.value = current;
+        sel.value = current;
       }
 
       // ============================================
-      // CHART
+      // CHART: pengeluaran per kegiatan
       // ============================================
-      function renderChart(expenses) {
-        const perKategori = {};
-        expenses.forEach((e) => {
-          perKategori[e.kategori] =
-            (perKategori[e.kategori] || 0) + Number(e.jumlah);
+      function renderChart(trxList) {
+        const keluar = trxList.filter((x) => x.tipe === "Keluar");
+        const per = {};
+        keluar.forEach((x) => {
+          per[x.kegiatan] = (per[x.kegiatan] || 0) + Number(x.jumlah);
         });
-        const labels = Object.keys(perKategori);
-        const data = Object.values(perKategori);
-
+        const labels = Object.keys(per);
+        const data = Object.values(per);
         if (chartInstance) chartInstance.destroy();
-        const ctx = document.getElementById("kategori-chart").getContext("2d");
-
+        const ctx = document.getElementById("kegiatan-chart").getContext("2d");
         if (labels.length === 0) {
           ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
           ctx.font = "14px sans-serif";
           ctx.fillStyle = "#94a3b8";
           ctx.textAlign = "center";
           ctx.fillText(
-            "Belum ada data untuk divisualisasikan",
+            "Belum ada pengeluaran untuk ditampilkan",
             ctx.canvas.width / 2,
             ctx.canvas.height / 2,
           );
           return;
         }
-
         chartInstance = new Chart(ctx, {
           type: "doughnut",
           data: {
@@ -897,157 +1097,178 @@
       // ============================================
       function render() {
         updateBulanFilter();
-        const filtered = getFilteredExpenses();
-        const tbody = document.getElementById("expense-table-body");
-        const emptyState = document.getElementById("empty-state");
-
+        const list = getFiltered();
+        const tbody = document.getElementById("trx-table-body");
+        const empty = document.getElementById("empty-state");
         tbody.innerHTML = "";
 
-        if (filtered.length === 0) {
-          emptyState.style.display = "block";
+        if (list.length === 0) {
+          empty.style.display = "block";
         } else {
-          emptyState.style.display = "none";
-          const sorted = [...filtered].sort((a, b) =>
+          empty.style.display = "none";
+          const sorted = [...list].sort((a, b) =>
             b.tanggal.localeCompare(a.tanggal),
           );
-
-          sorted.forEach((exp) => {
-            // Hitung harga satuan kalau qty valid
-            const qty = Number(exp.qty) || 0;
-            const jumlah = Number(exp.jumlah) || 0;
-            const hargaSatuan = qty > 0 ? jumlah / qty : 0;
-
-            // Cell Jumlah: total di atas, @harga_satuan di bawah (kecil)
-            const jumlahCell =
-              hargaSatuan > 0
-                ? `${formatRupiah(jumlah)}<span class="sub">@ ${formatRupiah(hargaSatuan)}</span>`
-                : formatRupiah(jumlah);
-
+          sorted.forEach((x) => {
+            const tipeClass = x.tipe.toLowerCase();
+            const statusClass = (x.status || "").toLowerCase();
+            const akunDisplay =
+              x.tipe === "Transfer"
+                ? `${x.akun || "—"} → ${x.akun_ke || "—"}`
+                : x.akun || "—";
             const row = document.createElement("tr");
             row.innerHTML = `
-          <td>${formatTanggal(exp.tanggal)}</td>
-          <td>${exp.kategori}</td>
-          <td>${exp.deskripsi}</td>
-          <td>${exp.qty || "—"}</td>
-          <td>${exp.satuan || "—"}</td>
-          <td class="jumlah-cell">${jumlahCell}</td>
-          <td><span class="status-badge status-${exp.status.toLowerCase()}">${exp.status}</span></td>
+          <td>${formatTanggal(x.tanggal)}</td>
+          <td><span class="tipe-badge ${tipeClass}">${x.tipe}</span></td>
+          <td>${x.kegiatan || "—"}</td>
+          <td>${akunDisplay}</td>
+          <td>${x.kategori || "—"}</td>
+          <td>${x.deskripsi || ""}</td>
+          <td>${formatRupiah(x.jumlah)}</td>
+          <td><span class="status-badge status-${statusClass}">${x.status || "—"}</span></td>
           <td>
-            <button class="btn-edit" onclick="editExpense('${exp.id}')">Edit</button>
-            <button class="btn-delete" onclick="hapusExpense('${exp.id}')">Hapus</button>
+            <button class="btn-edit" onclick="editTrx('${x.id}')">Edit</button>
+            <button class="btn-delete" onclick="hapusTrx('${x.id}')">Hapus</button>
           </td>
         `;
             tbody.appendChild(row);
           });
         }
 
-        // Summary
-        const totalAll = filtered.reduce((s, e) => s + Number(e.jumlah), 0);
-        const totalLunas = filtered
-          .filter((e) => e.status === "Lunas")
-          .reduce((s, e) => s + Number(e.jumlah), 0);
-        const totalBelum = filtered
-          .filter((e) => e.status === "Belum")
-          .reduce((s, e) => s + Number(e.jumlah), 0);
-        document.getElementById("total-all").textContent =
-          formatRupiah(totalAll);
-        document.getElementById("total-lunas").textContent =
-          formatRupiah(totalLunas);
-        document.getElementById("total-belum").textContent =
-          formatRupiah(totalBelum);
-        document.getElementById("total-count").textContent = filtered.length;
+        const masuk = list
+          .filter((x) => x.tipe === "Masuk")
+          .reduce((s, x) => s + Number(x.jumlah), 0);
+        const keluar = list
+          .filter((x) => x.tipe === "Keluar")
+          .reduce((s, x) => s + Number(x.jumlah), 0);
+        document.getElementById("total-saldo").textContent = formatRupiah(
+          masuk - keluar,
+        );
+        document.getElementById("total-masuk").textContent =
+          formatRupiah(masuk);
+        document.getElementById("total-keluar").textContent =
+          formatRupiah(keluar);
+        document.getElementById("total-count").textContent = list.length;
 
-        const bulan = document.getElementById("filter-bulan").value;
-        const kategori = document.getElementById("filter-kategori").value;
-        const status = document.getElementById("filter-status").value;
+        const b = document.getElementById("filter-bulan").value;
+        const t = document.getElementById("filter-tipe").value;
+        const k = document.getElementById("filter-kegiatan").value;
+        const a = document.getElementById("filter-akun").value;
         const info = [];
-        if (bulan) info.push(formatBulan(bulan));
-        if (kategori) info.push(kategori);
-        if (status) info.push(status);
+        if (b) info.push(formatBulan(b));
+        if (t) info.push(t);
+        if (k) info.push(k);
+        if (a) info.push("Akun: " + a);
         document.getElementById("filter-info").textContent =
           info.length > 0 ? "— " + info.join(" • ") : "";
 
-        renderChart(filtered);
+        renderChart(list);
       }
 
       // ============================================
       // ADD / EDIT
       // ============================================
       document
-        .getElementById("expense-form")
+        .getElementById("trx-form")
         .addEventListener("submit", function (e) {
           e.preventDefault();
+          const tipe = document.getElementById("tipe").value;
+          const akun = document.getElementById("akun").value;
+          const akunKe = document.getElementById("akun-ke").value;
 
-          // Validasi satuan (kalau "Lainnya" tapi kosong)
-          const satuanFinal = getSatuanValue();
-          if (!satuanFinal) {
-            alert("Satuan wajib diisi.");
+          if (!akun) {
+            alert("Akun wajib dipilih.");
             return;
           }
-
-          const editId = document.getElementById("edit-id").value;
-          const expenses = getExpenses();
+          if (tipe === "Transfer") {
+            if (!akunKe) {
+              alert("Akun tujuan wajib dipilih.");
+              return;
+            }
+            if (akun === akunKe) {
+              alert("Akun asal dan tujuan tidak boleh sama.");
+              return;
+            }
+          }
 
           const data = {
             tanggal: document.getElementById("tanggal").value,
-            kategori: document.getElementById("kategori").value,
+            tipe,
+            kegiatan: document.getElementById("kegiatan").value,
+            akun,
+            akun_ke: tipe === "Transfer" ? akunKe : "",
+            kategori:
+              tipe === "Keluar"
+                ? document.getElementById("kategori").value
+                : "",
             deskripsi: document.getElementById("deskripsi").value,
-            qty: document.getElementById("qty").value,
-            satuan: satuanFinal,
+            qty: tipe === "Keluar" ? document.getElementById("qty").value : "",
+            satuan: tipe === "Keluar" ? getSatuanValue() : "",
             jumlah: document.getElementById("jumlah").value,
             status: document.getElementById("status").value,
           };
 
-          if (editId) {
-            const idx = expenses.findIndex((e) => e.id === editId);
-            if (idx !== -1) expenses[idx] = { ...expenses[idx], ...data };
-            exitEditMode();
-          } else {
-            expenses.push({ id: Date.now().toString(), ...data });
+          if (tipe === "Keluar" && !data.satuan) {
+            alert("Satuan wajib diisi untuk Uang Keluar.");
+            return;
           }
 
-          saveExpenses(expenses);
+          const editId = document.getElementById("edit-id").value;
+          const list = getTrx();
+          if (editId) {
+            const i = list.findIndex((x) => x.id === editId);
+            if (i !== -1) list[i] = { ...list[i], ...data };
+            exitEditMode();
+          } else {
+            list.push({ id: Date.now().toString(), ...data });
+          }
+
+          saveTrx(list);
           this.reset();
           document.getElementById("tanggal").valueAsDate = new Date();
+          setTipe("Keluar");
           updateSatuanOptions();
           updateHargaSatuan();
           render();
         });
 
-      function editExpense(id) {
-        const exp = getExpenses().find((e) => e.id === id);
-        if (!exp) return;
+      function editTrx(id) {
+        const x = getTrx().find((t) => t.id === id);
+        if (!x) return;
+        document.getElementById("edit-id").value = x.id;
+        document.getElementById("tanggal").value = x.tanggal;
+        setTipe(x.tipe);
+        document.getElementById("kegiatan").value = x.kegiatan || "";
+        document.getElementById("akun").value = x.akun || "";
+        document.getElementById("akun-ke").value = x.akun_ke || "";
+        document.getElementById("kategori").value = x.kategori || "";
+        document.getElementById("deskripsi").value = x.deskripsi || "";
+        document.getElementById("qty").value = x.qty || "";
+        document.getElementById("jumlah").value = x.jumlah;
+        document.getElementById("status").value =
+          x.status === "Lunas" ||
+          x.status === "Diterima" ||
+          x.status === "Selesai"
+            ? "Lunas"
+            : "Belum";
 
-        document.getElementById("edit-id").value = exp.id;
-        document.getElementById("tanggal").value = exp.tanggal;
-        document.getElementById("kategori").value = exp.kategori;
-        document.getElementById("deskripsi").value = exp.deskripsi;
-        document.getElementById("qty").value = exp.qty || "";
-        document.getElementById("jumlah").value = exp.jumlah;
-        document.getElementById("status").value = exp.status;
-
-        // Refresh satuan dropdown sesuai kategori, lalu set value
-        updateSatuanOptions();
-        const satuanList = SATUAN_MAP[exp.kategori] || [];
-        if (exp.satuan && satuanList.includes(exp.satuan)) {
-          document.getElementById("satuan").value = exp.satuan;
-          document.getElementById("satuan-custom-wrapper").style.display =
-            "none";
-        } else if (exp.satuan) {
-          // Satuan custom — aktifkan "Lainnya" dan isi text input
-          document.getElementById("satuan").value = "__lainnya__";
-          document.getElementById("satuan-custom").value = exp.satuan;
-          document.getElementById("satuan-custom-wrapper").style.display = "";
-          document.getElementById("satuan-custom").required = true;
+        if (x.tipe === "Keluar" && x.kategori) {
+          updateSatuanOptions();
+          const list = SATUAN_MAP[x.kategori] || [];
+          if (x.satuan && list.includes(x.satuan)) {
+            document.getElementById("satuan").value = x.satuan;
+          } else if (x.satuan) {
+            document.getElementById("satuan").value = "__lainnya__";
+            document.getElementById("satuan-custom").value = x.satuan;
+            document.getElementById("satuan-custom-wrapper").style.display = "";
+          }
         }
-
         updateHargaSatuan();
 
-        document.getElementById("form-title").innerHTML = "✏️ Edit Expense";
+        document.getElementById("form-title").textContent = "✏️ Edit Transaksi";
         document.getElementById("edit-notice").style.display = "block";
-        document.getElementById("submit-btn").textContent = "Update Expense";
+        document.getElementById("submit-btn").textContent = "Update";
         document.getElementById("cancel-btn").style.display = "inline-block";
-
         document
           .querySelector(".form-section")
           .scrollIntoView({ behavior: "smooth" });
@@ -1055,57 +1276,161 @@
 
       function exitEditMode() {
         document.getElementById("edit-id").value = "";
-        document.getElementById("form-title").innerHTML =
-          "➕ Tambah Expense Baru";
+        document.getElementById("form-title").textContent =
+          "➕ Tambah Transaksi Baru";
         document.getElementById("edit-notice").style.display = "none";
-        document.getElementById("submit-btn").textContent = "Simpan Expense";
+        document.getElementById("submit-btn").textContent = "Simpan Transaksi";
         document.getElementById("cancel-btn").style.display = "none";
       }
 
       document
         .getElementById("cancel-btn")
         .addEventListener("click", function () {
-          document.getElementById("expense-form").reset();
+          document.getElementById("trx-form").reset();
           document.getElementById("tanggal").valueAsDate = new Date();
+          setTipe("Keluar");
           updateSatuanOptions();
           updateHargaSatuan();
           exitEditMode();
         });
 
-      // ============================================
-      // DELETE
-      // ============================================
-      function hapusExpense(id) {
-        if (!confirm("Yakin mau hapus expense ini?")) return;
-        const expenses = getExpenses().filter((e) => e.id !== id);
-        saveExpenses(expenses);
+      function hapusTrx(id) {
+        if (!confirm("Yakin mau hapus transaksi ini?")) return;
+        saveTrx(getTrx().filter((x) => x.id !== id));
         render();
       }
 
       // ============================================
-      // FILTER EVENTS
+      // KELOLA AKUN & KEGIATAN (modal)
       // ============================================
+      function openManage(type) {
+        const isAkun = type === "akun";
+        const items = isAkun ? getAkun() : getKegiatan();
+        const title = isAkun ? "Kelola Akun" : "Kelola Kegiatan";
+        const placeholder = isAkun
+          ? "contoh: BCA Pribadi, Kas Toko"
+          : "contoh: Warehouse";
+
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.innerHTML = `
+      <div class="modal">
+        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+        <h3>${title}</h3>
+        <form id="add-form" style="display:flex; gap:8px; margin-bottom:16px;">
+          <input type="text" id="new-item" placeholder="${placeholder}" required style="flex:1;">
+          <button type="submit">+ Tambah</button>
+        </form>
+        <ul class="manage-list" id="manage-list"></ul>
+      </div>
+    `;
+        document.body.appendChild(overlay);
+
+        function renderList() {
+          const ul = overlay.querySelector("#manage-list");
+          const cur = isAkun ? getAkun() : getKegiatan();
+          ul.innerHTML = "";
+          if (cur.length === 0) {
+            ul.innerHTML =
+              '<li style="color:#94a3b8; justify-content:center;">Belum ada item</li>';
+            return;
+          }
+          cur.forEach((name, i) => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+          <span class="name">${name}</span>
+          <button class="btn-edit" onclick="window._renameItem('${type}', ${i})">Rename</button>
+          <button class="btn-delete" onclick="window._deleteItem('${type}', ${i})">Hapus</button>
+        `;
+            ul.appendChild(li);
+          });
+        }
+
+        window._renameItem = function (t, idx) {
+          const cur = t === "akun" ? getAkun() : getKegiatan();
+          const newName = prompt("Nama baru:", cur[idx]);
+          if (!newName || newName.trim() === "" || newName === cur[idx]) return;
+          if (cur.includes(newName.trim())) {
+            alert("Nama sudah ada.");
+            return;
+          }
+          cur[idx] = newName.trim();
+          t === "akun" ? saveAkun(cur) : saveKegiatan(cur);
+          renderList();
+          populateAkunDropdown();
+          populateKegiatanDropdown();
+          render();
+        };
+
+        window._deleteItem = function (t, idx) {
+          const cur = t === "akun" ? getAkun() : getKegiatan();
+          const name = cur[idx];
+          const field = t === "akun" ? ["akun", "akun_ke"] : ["kegiatan"];
+          const inUse = getTrx().some((x) => field.some((f) => x[f] === name));
+          if (
+            inUse &&
+            !confirm(
+              `"${name}" masih dipakai di beberapa transaksi. Tetap hapus? (transaksi lama tetap ada, tapi jadi kosong)`,
+            )
+          )
+            return;
+          cur.splice(idx, 1);
+          t === "akun" ? saveAkun(cur) : saveKegiatan(cur);
+          renderList();
+          populateAkunDropdown();
+          populateKegiatanDropdown();
+          render();
+        };
+
+        overlay
+          .querySelector("#add-form")
+          .addEventListener("submit", function (e) {
+            e.preventDefault();
+            const input = overlay.querySelector("#new-item");
+            const name = input.value.trim();
+            if (!name) return;
+            const cur = isAkun ? getAkun() : getKegiatan();
+            if (cur.includes(name)) {
+              alert("Nama sudah ada.");
+              return;
+            }
+            cur.push(name);
+            isAkun ? saveAkun(cur) : saveKegiatan(cur);
+            input.value = "";
+            renderList();
+            populateAkunDropdown();
+            populateKegiatanDropdown();
+          });
+
+        renderList();
+      }
+
       document
-        .getElementById("filter-bulan")
-        .addEventListener("change", render);
+        .getElementById("manage-akun-btn")
+        .addEventListener("click", () => openManage("akun"));
       document
-        .getElementById("filter-kategori")
-        .addEventListener("change", render);
-      document
-        .getElementById("filter-status")
-        .addEventListener("change", render);
+        .getElementById("manage-kegiatan-btn")
+        .addEventListener("click", () => openManage("kegiatan"));
+
+      // ============================================
+      // FILTER & LAIN-LAIN
+      // ============================================
+      ["filter-bulan", "filter-tipe", "filter-kegiatan", "filter-akun"].forEach(
+        (id) => {
+          document.getElementById(id).addEventListener("change", render);
+        },
+      );
       document
         .getElementById("reset-filter-btn")
         .addEventListener("click", function () {
-          document.getElementById("filter-bulan").value = "";
-          document.getElementById("filter-kategori").value = "";
-          document.getElementById("filter-status").value = "";
+          [
+            "filter-bulan",
+            "filter-tipe",
+            "filter-kegiatan",
+            "filter-akun",
+          ].forEach((id) => (document.getElementById(id).value = ""));
           render();
         });
-
-      // ============================================
-      // SATUAN & HARGA SATUAN EVENTS
-      // ============================================
       document
         .getElementById("kategori")
         .addEventListener("change", updateSatuanOptions);
@@ -1120,44 +1445,42 @@
         .addEventListener("input", updateHargaSatuan);
 
       // ============================================
-      // EXPORT CSV
+      // EXPORT / IMPORT CSV
       // ============================================
       document
         .getElementById("export-btn")
         .addEventListener("click", function () {
-          const expenses = getExpenses();
-          if (expenses.length === 0) {
-            alert("Belum ada expense untuk di-export.");
+          const list = getTrx();
+          if (list.length === 0) {
+            alert("Belum ada transaksi untuk di-export.");
             return;
           }
-
-          const dataUntukCSV = expenses.map((e) => ({
-            Tanggal: e.tanggal,
-            Kategori: e.kategori,
-            Deskripsi: e.deskripsi,
-            Qty: e.qty || "",
-            Satuan: e.satuan || "",
-            Jumlah: e.jumlah,
-            Status: e.status,
+          const data = list.map((x) => ({
+            Tanggal: x.tanggal,
+            Tipe: x.tipe,
+            Kegiatan: x.kegiatan || "",
+            Akun: x.akun || "",
+            AkunKe: x.akun_ke || "",
+            Kategori: x.kategori || "",
+            Deskripsi: x.deskripsi || "",
+            Qty: x.qty || "",
+            Satuan: x.satuan || "",
+            Jumlah: x.jumlah,
+            Status: x.status || "",
           }));
-
-          const csv = Papa.unparse(dataUntukCSV);
+          const csv = Papa.unparse(data);
           const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
           const url = URL.createObjectURL(blob);
           const today = new Date().toISOString().split("T")[0];
-
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `expenses-${today}.csv`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `finance-${today}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
           URL.revokeObjectURL(url);
         });
 
-      // ============================================
-      // IMPORT CSV
-      // ============================================
       document
         .getElementById("import-btn")
         .addEventListener("click", function () {
@@ -1169,81 +1492,85 @@
         .addEventListener("change", function (e) {
           const file = e.target.files[0];
           if (!file) return;
-
           Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
             complete: function (results) {
               const rows = results.data;
               if (rows.length === 0) {
-                alert("File CSV kosong atau formatnya tidak sesuai.");
+                alert("CSV kosong.");
                 return;
               }
-
-              const kolomWajib = [
-                "Tanggal",
-                "Kategori",
-                "Deskripsi",
-                "Qty",
-                "Satuan",
-                "Jumlah",
-                "Status",
-              ];
-              const kolomAda = Object.keys(rows[0]);
-              const kolomHilang = kolomWajib.filter(
-                (k) => !kolomAda.includes(k),
-              );
-              if (kolomHilang.length > 0) {
+              const wajib = ["Tanggal", "Tipe", "Jumlah"];
+              const ada = Object.keys(rows[0]);
+              const hilang = wajib.filter((k) => !ada.includes(k));
+              if (hilang.length > 0) {
                 alert(
-                  "Format CSV salah. Kolom yang hilang: " +
-                    kolomHilang.join(", ") +
-                    "\n\nKolom wajib: " +
-                    kolomWajib.join(", "),
+                  "Kolom wajib hilang: " +
+                    hilang.join(", ") +
+                    "\nFormat baru: Tanggal, Tipe, Kegiatan, Akun, AkunKe, Kategori, Deskripsi, Qty, Satuan, Jumlah, Status",
                 );
                 return;
               }
-
-              const jumlahBaru = rows.length;
-              const jumlahLama = getExpenses().length;
-              const ok = confirm(
-                `Akan ditambahkan ${jumlahBaru} baris baru ke ${jumlahLama} expense yang sudah ada.\n\n` +
-                  `Total setelah import: ${jumlahLama + jumlahBaru} expense.\n\nLanjutkan?`,
-              );
-              if (!ok) {
+              if (
+                !confirm(`Akan ditambah ${rows.length} transaksi. Lanjutkan?`)
+              ) {
                 e.target.value = "";
                 return;
               }
-
-              const expensesBaru = rows.map((row, i) => ({
+              const baru = rows.map((r, i) => ({
                 id: (Date.now() + i).toString(),
-                tanggal: row.Tanggal,
-                kategori: row.Kategori,
-                deskripsi: row.Deskripsi,
-                qty: row.Qty,
-                satuan: row.Satuan,
-                jumlah: row.Jumlah,
-                status: row.Status,
+                tanggal: r.Tanggal,
+                tipe: r.Tipe || "Keluar",
+                kegiatan: r.Kegiatan || "",
+                akun: r.Akun || "",
+                akun_ke: r.AkunKe || "",
+                kategori: r.Kategori || "",
+                deskripsi: r.Deskripsi || "",
+                qty: r.Qty || "",
+                satuan: r.Satuan || "",
+                jumlah: r.Jumlah,
+                status: r.Status || "Lunas",
               }));
-
-              const expenses = getExpenses().concat(expensesBaru);
-              saveExpenses(expenses);
-              alert(`✅ Berhasil import ${jumlahBaru} expense!`);
+              saveTrx(getTrx().concat(baru));
+              alert(`✅ Berhasil import ${rows.length} transaksi.`);
               e.target.value = "";
               render();
             },
-            error: function (err) {
-              alert("Gagal baca file CSV: " + err.message);
-            },
+            error: (err) => alert("Gagal baca CSV: " + err.message),
           });
         });
 
       // ============================================
       // INIT
       // ============================================
+      // Tombol logout dinamis di header
+      const headerRight = document.querySelector(
+        "header > div > div:last-child",
+      );
+      if (headerRight) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "logout-btn";
+        btn.textContent = "🔒 Logout";
+        btn.addEventListener("click", logout);
+        headerRight.appendChild(btn);
+      }
+
+      // Pastikan kegiatan default ke-seed sebelum render pertama
+      getKegiatan();
+
       document.getElementById("tanggal").valueAsDate = new Date();
+      populateAkunDropdown();
+      populateKegiatanDropdown();
+      setTipe("Keluar");
       updateSatuanOptions();
       updateHargaSatuan();
-      render();
+
+      setTimeout(function () {
+        if (sessionStorage.getItem(AUTH_KEY) === "yes") unlockApp();
+        else lockApp();
+      }, 0);
     </script>
   </body>
 </html>
