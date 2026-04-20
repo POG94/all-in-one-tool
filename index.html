@@ -452,6 +452,13 @@
             >
               📁 Kelola Kegiatan
             </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              id="manage-kategori-btn"
+            >
+              🏷️ Kelola Kategori
+            </button>
             <button type="button" id="export-btn" style="background: #16a34a">
               📥 Export
             </button>
@@ -746,6 +753,17 @@
       const STORAGE_TRX = "fim_transactions";
       const STORAGE_AKUN = "fim_akun";
       const STORAGE_KEGIATAN = "fim_kegiatan";
+      const STORAGE_KATEGORI = "fim_kategori";
+
+      // Default kategori — sama dengan yang sebelumnya di-hardcode di HTML
+      const DEFAULT_KATEGORI = [
+        "Pembelian Stok",
+        "Operasional",
+        "Gaji/Upah",
+        "Transportasi",
+        "Pajak & Admin",
+        "Lain-lain",
+      ];
 
       // Default kegiatan pre-seed
       const DEFAULT_KEGIATAN = ["Pamalayan", "Sinkas", "Toko", "Kantor", "PT"];
@@ -800,7 +818,17 @@
       function saveKegiatan(arr) {
         localStorage.setItem(STORAGE_KEGIATAN, JSON.stringify(arr));
       }
-
+      function getKategori() {
+        const d = localStorage.getItem(STORAGE_KATEGORI);
+        if (!d) {
+          saveKategori(DEFAULT_KATEGORI);
+          return [...DEFAULT_KATEGORI];
+        }
+        return JSON.parse(d);
+      }
+      function saveKategori(arr) {
+        localStorage.setItem(STORAGE_KATEGORI, JSON.stringify(arr));
+      }
       // ============================================
       // FORMATTERS
       // ============================================
@@ -934,7 +962,19 @@
           el.value = current;
         });
       }
-
+      function populateKategoriDropdown() {
+        const kat = getKategori();
+        const sel = document.getElementById("kategori");
+        const current = sel.value;
+        sel.innerHTML = '<option value="">-- Pilih --</option>';
+        kat.forEach((k) => {
+          const opt = document.createElement("option");
+          opt.value = k;
+          opt.textContent = k;
+          sel.appendChild(opt);
+        });
+        sel.value = current;
+      }
       function populateKegiatanDropdown() {
         const keg = getKegiatan();
         const selects = ["kegiatan", "filter-kegiatan"];
@@ -1304,12 +1344,28 @@
       // KELOLA AKUN & KEGIATAN (modal)
       // ============================================
       function openManage(type) {
+        const getFn = {
+          akun: getAkun,
+          kegiatan: getKegiatan,
+          kategori: getKategori,
+        }[type];
+        const saveFn = {
+          akun: saveAkun,
+          kegiatan: saveKegiatan,
+          kategori: saveKategori,
+        }[type];
+        const title = {
+          akun: "Kelola Akun",
+          kegiatan: "Kelola Kegiatan",
+          kategori: "Kelola Kategori",
+        }[type];
+        const placeholder = {
+          akun: "contoh: BCA Pribadi, Kas Toko",
+          kegiatan: "contoh: Warehouse",
+          kategori: "contoh: Marketing",
+        }[type];
+        const items = getFn();
         const isAkun = type === "akun";
-        const items = isAkun ? getAkun() : getKegiatan();
-        const title = isAkun ? "Kelola Akun" : "Kelola Kegiatan";
-        const placeholder = isAkun
-          ? "contoh: BCA Pribadi, Kas Toko"
-          : "contoh: Warehouse";
 
         const overlay = document.createElement("div");
         overlay.className = "modal-overlay";
@@ -1328,7 +1384,7 @@
 
         function renderList() {
           const ul = overlay.querySelector("#manage-list");
-          const cur = isAkun ? getAkun() : getKegiatan();
+          const cur = getFn();
           ul.innerHTML = "";
           if (cur.length === 0) {
             ul.innerHTML =
@@ -1347,7 +1403,17 @@
         }
 
         window._renameItem = function (t, idx) {
-          const cur = t === "akun" ? getAkun() : getKegiatan();
+          const gFn = {
+            akun: getAkun,
+            kegiatan: getKegiatan,
+            kategori: getKategori,
+          }[t];
+          const sFn = {
+            akun: saveAkun,
+            kegiatan: saveKegiatan,
+            kategori: saveKategori,
+          }[t];
+          const cur = gFn();
           const newName = prompt("Nama baru:", cur[idx]);
           if (!newName || newName.trim() === "" || newName === cur[idx]) return;
           if (cur.includes(newName.trim())) {
@@ -1355,18 +1421,34 @@
             return;
           }
           cur[idx] = newName.trim();
-          t === "akun" ? saveAkun(cur) : saveKegiatan(cur);
+          sFn(cur);
           renderList();
           populateAkunDropdown();
           populateKegiatanDropdown();
+          populateKategoriDropdown();
           render();
         };
-
         window._deleteItem = function (t, idx) {
-          const cur = t === "akun" ? getAkun() : getKegiatan();
+          const gFn = {
+            akun: getAkun,
+            kegiatan: getKegiatan,
+            kategori: getKategori,
+          }[t];
+          const sFn = {
+            akun: saveAkun,
+            kegiatan: saveKegiatan,
+            kategori: saveKategori,
+          }[t];
+          const cur = gFn();
           const name = cur[idx];
-          const field = t === "akun" ? ["akun", "akun_ke"] : ["kegiatan"];
-          const inUse = getTrx().some((x) => field.some((f) => x[f] === name));
+          const fieldMap = {
+            akun: ["akun", "akun_ke"],
+            kegiatan: ["kegiatan"],
+            kategori: ["kategori"],
+          };
+          const inUse = getTrx().some((x) =>
+            fieldMap[t].some((f) => x[f] === name),
+          );
           if (
             inUse &&
             !confirm(
@@ -1375,10 +1457,11 @@
           )
             return;
           cur.splice(idx, 1);
-          t === "akun" ? saveAkun(cur) : saveKegiatan(cur);
+          sFn(cur);
           renderList();
           populateAkunDropdown();
           populateKegiatanDropdown();
+          populateKategoriDropdown();
           render();
         };
 
@@ -1389,17 +1472,18 @@
             const input = overlay.querySelector("#new-item");
             const name = input.value.trim();
             if (!name) return;
-            const cur = isAkun ? getAkun() : getKegiatan();
+            const cur = getFn();
             if (cur.includes(name)) {
               alert("Nama sudah ada.");
               return;
             }
             cur.push(name);
-            isAkun ? saveAkun(cur) : saveKegiatan(cur);
+            saveFn(cur);
             input.value = "";
             renderList();
             populateAkunDropdown();
             populateKegiatanDropdown();
+            populateKategoriDropdown();
           });
 
         renderList();
@@ -1411,6 +1495,9 @@
       document
         .getElementById("manage-kegiatan-btn")
         .addEventListener("click", () => openManage("kegiatan"));
+      document
+        .getElementById("manage-kategori-btn")
+        .addEventListener("click", () => openManage("kategori"));
 
       // ============================================
       // FILTER & LAIN-LAIN
@@ -1563,6 +1650,7 @@
       document.getElementById("tanggal").valueAsDate = new Date();
       populateAkunDropdown();
       populateKegiatanDropdown();
+      populateKategoriDropdown();
       setTipe("Keluar");
       updateSatuanOptions();
       updateHargaSatuan();
