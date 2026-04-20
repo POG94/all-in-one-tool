@@ -835,6 +835,89 @@
       function formatRupiah(n) {
         return "Rp " + Number(n || 0).toLocaleString("id-ID");
       }
+      // Parse berbagai format tanggal yang umum dari Excel/manual input
+      // Output: YYYY-MM-DD (ISO) atau null kalau nggak bisa di-parse
+      function parseTanggal(input) {
+        if (!input) return null;
+        const s = String(input).trim();
+
+        // Format ISO: 2026-04-15 (udah bener, pass-through)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+        // Format DD/MM/YYYY atau DD-MM-YYYY (Indonesia short date)
+        const ddmm = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (ddmm) {
+          const d = ddmm[1].padStart(2, "0");
+          const m = ddmm[2].padStart(2, "0");
+          return `${ddmm[3]}-${m}-${d}`;
+        }
+
+        // Format YYYY/MM/DD
+        const ymd = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+        if (ymd) {
+          const m = ymd[2].padStart(2, "0");
+          const d = ymd[3].padStart(2, "0");
+          return `${ymd[1]}-${m}-${d}`;
+        }
+
+        // Format readable: "15 Apr 2026" atau "15 April 2026"
+        const readable = s.match(/^(\d{1,2})\s+(\w+)\s+(\d{4})$/);
+        if (readable) {
+          const bulanMap = {
+            jan: "01",
+            januari: "01",
+            feb: "02",
+            februari: "02",
+            mar: "03",
+            maret: "03",
+            apr: "04",
+            april: "04",
+            mei: "05",
+            may: "05",
+            jun: "06",
+            juni: "06",
+            june: "06",
+            jul: "07",
+            juli: "07",
+            july: "07",
+            agu: "08",
+            agustus: "08",
+            aug: "08",
+            august: "08",
+            sep: "09",
+            september: "09",
+            okt: "10",
+            oktober: "10",
+            oct: "10",
+            october: "10",
+            nov: "11",
+            november: "11",
+            des: "12",
+            desember: "12",
+            dec: "12",
+            december: "12",
+          };
+          const m = bulanMap[readable[2].toLowerCase()];
+          if (m) {
+            const d = readable[1].padStart(2, "0");
+            return `${readable[3]}-${m}-${d}`;
+          }
+        }
+
+        // Format Excel numeric (kalau ada — Excel kadang export tanggal sebagai angka)
+        if (/^\d+$/.test(s)) {
+          const num = parseInt(s);
+          if (num > 10000 && num < 100000) {
+            // Excel epoch: 1900-01-01 = hari ke-1 (dengan bug 1900 leap year)
+            const d = new Date((num - 25569) * 86400 * 1000);
+            if (!isNaN(d)) return d.toISOString().split("T")[0];
+          }
+        }
+
+        // Gagal parse
+        return null;
+      }
+
       function formatTanggal(t) {
         const d = new Date(t);
         return d.toLocaleDateString("id-ID", {
@@ -1607,7 +1690,7 @@
               }
               const baru = rows.map((r, i) => ({
                 id: (Date.now() + i).toString(),
-                tanggal: r.Tanggal,
+                tanggal: parseTanggal(r.Tanggal) || r.Tanggal,
                 tipe: r.Tipe || "Keluar",
                 kegiatan: r.Kegiatan || "",
                 akun: r.Akun || "",
@@ -1620,7 +1703,14 @@
                 status: r.Status || "Lunas",
               }));
               saveTrx(getTrx().concat(baru));
-              alert(`✅ Berhasil import ${rows.length} transaksi.`);
+              const invalidDates = baru.filter(
+                (x) => !parseTanggal(x.tanggal),
+              ).length;
+              let msg = `✅ Berhasil import ${rows.length} transaksi.`;
+              if (invalidDates > 0) {
+                msg += `\n\n⚠️ Tapi ${invalidDates} baris punya tanggal yang nggak bisa di-parse. Cek & edit manual ya.`;
+              }
+              alert(msg);
               e.target.value = "";
               render();
             },
