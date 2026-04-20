@@ -837,6 +837,15 @@
       }
       // Parse berbagai format tanggal yang umum dari Excel/manual input
       // Output: YYYY-MM-DD (ISO) atau null kalau nggak bisa di-parse
+      // Normalize value tipe transaksi ke format internal yang konsisten
+      function normalizeTipe(input) {
+        if (!input) return "Keluar";
+        const s = String(input).toLowerCase().trim();
+        if (s.includes("masuk")) return "Masuk";
+        if (s.includes("keluar")) return "Keluar";
+        if (s.includes("transfer")) return "Transfer";
+        return "Keluar"; // default kalau nggak ketebak
+      }
       function parseTanggal(input) {
         if (!input) return null;
         const s = String(input).trim();
@@ -1691,7 +1700,7 @@
               const baru = rows.map((r, i) => ({
                 id: (Date.now() + i).toString(),
                 tanggal: parseTanggal(r.Tanggal) || r.Tanggal,
-                tipe: r.Tipe || "Keluar",
+                tipe: normalizeTipe(r.Tipe),
                 kegiatan: r.Kegiatan || "",
                 akun: r.Akun || "",
                 akun_ke: r.AkunKe || "",
