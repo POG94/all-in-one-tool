@@ -650,6 +650,12 @@
             </select>
           </div>
           <div>
+            <label>Kategori</label>
+            <select id="filter-kategori">
+              <option value="">Semua Kategori</option>
+            </select>
+          </div>
+          <div>
             <label>Akun</label>
             <select id="filter-akun">
               <option value="">Semua Akun</option>
@@ -1056,16 +1062,32 @@
       }
       function populateKategoriDropdown() {
         const kat = getKategori();
-        const sel = document.getElementById("kategori");
-        const current = sel.value;
-        sel.innerHTML = '<option value="">-- Pilih --</option>';
+
+        // Dropdown di form
+        const selForm = document.getElementById("kategori");
+        const currentForm = selForm.value;
+        selForm.innerHTML = '<option value="">-- Pilih --</option>';
         kat.forEach((k) => {
           const opt = document.createElement("option");
           opt.value = k;
           opt.textContent = k;
-          sel.appendChild(opt);
+          selForm.appendChild(opt);
         });
-        sel.value = current;
+        selForm.value = currentForm;
+
+        // Dropdown di filter
+        const selFilter = document.getElementById("filter-kategori");
+        if (selFilter) {
+          const currentFilter = selFilter.value;
+          selFilter.innerHTML = '<option value="">Semua Kategori</option>';
+          kat.forEach((k) => {
+            const opt = document.createElement("option");
+            opt.value = k;
+            opt.textContent = k;
+            selFilter.appendChild(opt);
+          });
+          selFilter.value = currentFilter;
+        }
       }
       function populateKegiatanDropdown() {
         const keg = getKegiatan();
@@ -1141,11 +1163,13 @@
         const t = document.getElementById("filter-tipe").value;
         const k = document.getElementById("filter-kegiatan").value;
         const a = document.getElementById("filter-akun").value;
+        const kat = document.getElementById("filter-kategori").value;
         return getTrx().filter((x) => {
           if (b && getBulan(x.tanggal) !== b) return false;
           if (t && x.tipe !== t) return false;
           if (k && x.kegiatan !== k) return false;
           if (a && x.akun !== a && x.akun_ke !== a) return false;
+          if (kat && x.kategori !== kat) return false;
           return true;
         });
       }
@@ -1594,11 +1618,15 @@
       // ============================================
       // FILTER & LAIN-LAIN
       // ============================================
-      ["filter-bulan", "filter-tipe", "filter-kegiatan", "filter-akun"].forEach(
-        (id) => {
-          document.getElementById(id).addEventListener("change", render);
-        },
-      );
+      [
+        "filter-bulan",
+        "filter-tipe",
+        "filter-kegiatan",
+        "filter-akun",
+        "filter-kategori",
+      ].forEach((id) => {
+        document.getElementById(id).addEventListener("change", render);
+      });
       document
         .getElementById("reset-filter-btn")
         .addEventListener("click", function () {
